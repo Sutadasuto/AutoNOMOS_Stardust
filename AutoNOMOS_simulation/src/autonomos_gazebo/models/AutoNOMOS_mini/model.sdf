@@ -32,7 +32,7 @@
       </collision>
 
       <collision name='base_link_geom_front_link'>
-        <pose>0.160000 0.000000 -0.0500000 0.000000 0.000000 0.000000</pose>
+        <pose>0.1600 0.0000 -0.05000 0.0000 0.0000 0.0000</pose>
         <geometry>
           <box>
             <size>0.020000 0.150000 0.005000</size>
