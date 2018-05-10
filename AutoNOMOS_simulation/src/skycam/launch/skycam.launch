@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+
+	<node pkg="skycam" type="skycam" name="skycam" output="screen">
+		<rosparam file="$(find skycam)/config/config.yaml" command="load" />		
+	</node>	
+        
+        <node pkg="using_markers" type="draw" name="using_markers" output="screen">	
+	</node>	
+        
+        <node pkg="tecladoCilindro" type="tecladoCilindro" name="tecladoCilindro" output="screen">	
+	</node>	
+
+</launch>

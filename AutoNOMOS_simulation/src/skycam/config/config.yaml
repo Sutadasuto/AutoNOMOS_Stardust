@@ -1,0 +1,24 @@
+flag1: false
+flag: 1
+scale: 0.640 #pixels per centimeter
+resizeScale: 0.375 #scale for meshing
+minCurve: 80 #closest turn radius possible for the car (i.e. at maximum steerling angle); given in centimeters
+beam: 1000
+angle: 0
+velRange: 10
+steerRange: 70
+errorTolerance: 10 
+skip: 4
+Pv: 0.05
+Iv: 0.005
+Dv: 1
+Ps: 11
+Is: 0.0005
+Ds: 2
+Ps2: 100
+Is2: 0.005
+Ds2: 20
+alpha: 0.2
+laserFOV: 25
+laserRange: 0.60
+obstacleThreshold: 50

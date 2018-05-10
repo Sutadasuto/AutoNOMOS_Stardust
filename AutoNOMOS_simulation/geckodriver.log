@@ -1,0 +1,12 @@
+1521504204845	geckodriver	INFO	geckodriver 0.19.1
+1521504204861	geckodriver	INFO	Listening on 127.0.0.1:40875
+1521504206096	mozrunner::runner	INFO	Running command: "/usr/bin/firefox" "-marionette" "-profile" "/tmp/rust_mozprofile.yyNd03nMFIfu"
+1521504210124	Marionette	INFO	Enabled via --marionette
+1521504215772	Marionette	INFO	Listening on port 40959
+1521504215880	Marionette	WARN	TLS certificate errors will be ignored for this session
+1521504367904	geckodriver	INFO	geckodriver 0.19.1
+1521504367908	geckodriver	INFO	Listening on 127.0.0.1:36431
+1521504369053	mozrunner::runner	INFO	Running command: "/usr/bin/firefox" "-marionette" "-profile" "/tmp/rust_mozprofile.em4aFOz678Ui"
+1521504369884	Marionette	INFO	Enabled via --marionette
+1521504372552	Marionette	INFO	Listening on port 39595
+1521504372580	Marionette	WARN	TLS certificate errors will be ignored for this session
