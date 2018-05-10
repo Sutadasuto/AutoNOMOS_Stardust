@@ -1,16 +1,61 @@
-<<<<<<< HEAD
-# EK_AutoNOMOS
-Eagle Knights development for AutoNOMOS mini Simulation
+**Cloning the repository:
 
-## Gazebo Plugin
-Plugin for controlling the autonomos mini
+Open the desired destiny in terminal. Then
 
+$ git clone https://github.com/Sutadasuto/AutoNOMOS_Stardust
 
-## AutoNOMOS simulation
-Files for using the simulation of the autonomos  
+**Compiling the plugin for contolling the model in Gazebo:
 
+In terminal, enter the Gazebo_plugin folder. Then
 
-=======
-# AutoNOMOS_Stardust
-A repository extending the AutoNOMOS model created by the Eagle Knights from ITAM (https://github.com/EagleKnights). The model is loaded in a Gazebo world with a camera in the sky; the purpose of this repository is to implement path planning and following.
->>>>>>> 8adecf3efe0138d60a17c15069ddf0801651fbe9
+$ mkdir build
+$ cd build
+$ cmake ../
+$ make
+
+For further reference: http://gazebosim.org/tutorials?tut=plugins_hello_world
+
+**Bashrc update:
+
+In terminal
+
+$ sudo  gedit ~/.bashrc
+
+In the file opened by this command, add the next lines at the end:
+
+source /home/sutadasuto/AutoNOMOS_Stardust/AutoNOMOS_simulation/devel/setup.bash
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/sutadasuto/AutoNOMOS_Stardust/Gazebo_plugin/build
+
+(Be sure to replace "/home/sutadasuto" for the path where you downloaded the repo. Save the file and close it)
+
+$ source ~/.bashrc
+
+**Building the project:
+
+Open the ~/AutoNOMOS_Stardust/AutoNOMOS_simulation folder in terminal. Then
+$ catkin_make
+$ source ~/.bashrc
+
+The system should be ready for use. In terminal, run
+
+$ roslaunch autonomos_gazebo my_world.launch 
+
+A Gazebo simulation should start, with the AutoNOMOS in the middle of a world with red blocks. In another tab of the terminal, list the ROS topics
+
+$ rostopic list
+
+Be sure the next topics are in list, as those are the ones in charge of moving the AutoNOMOS. If those topics are not display, there was a problem with the plugin:
+
+/AutoNOMOS_mini/manual_control/steering
+/AutoNOMOS_mini/manual_control/velocity
+
+**Running the project
+
+Open the ~/AutoNOMOS_Stardust/AutoNOMOS_simulation folder in terminal. In different tabs, run the next commands in the given order:
+
+$ roscore
+$ rosrun rviz rviz
+$ roslaunch skycam skycam.launch
+$ roslaunch autonomos_gazebo my_world.launch 
+
+In the Rviz window, use the "2D Nav Goal" tool to select a destination for the AutoNOMOS.

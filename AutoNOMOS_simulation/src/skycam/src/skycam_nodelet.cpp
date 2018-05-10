@@ -89,7 +89,6 @@ void skycam::skyImage(const sensor_msgs::ImageConstPtr &msg)
 	}	
 	sky_image = cv_ptr_1->image;                       
         
-        //Image Segmentation (Original code from https://www.learnopencv.com/color-spaces-in-opencv-cpp-python/)
         cvtColor(sky_image, lab, COLOR_BGR2Lab);
         split(lab,labChannels);       
                  
@@ -100,7 +99,6 @@ void skycam::skyImage(const sensor_msgs::ImageConstPtr &msg)
         dilate(car, car, element);       
         
         position = skycam::getPosition(car);
-        //ROS_INFO_STREAM(position);
 
         
         //Draw Goal	
@@ -168,7 +166,6 @@ void skycam::skyImage(const sensor_msgs::ImageConstPtr &msg)
                 Mat mask = Mat::zeros(currentMap.rows, currentMap.cols, CV_8UC1);
                 Point center = skycam::getPosition(car);
                 float rotation = (-angle * 180 / 3.1416) - laserFOV;
-                //ROS_INFO_STREAM("Rotation: " << rotation);
                 cv::Rect _rectangle = cv::Rect(int(center.x - laserMap.cols/2), 
                 int(center.y - laserMap.rows/2), int(2*laserMap.cols/2), int(2*laserMap.rows/2));
                 cv::Rect roi = _rectangle & cv::Rect(0, 0, currentMap.cols, currentMap.rows);                                                         
@@ -176,24 +173,11 @@ void skycam::skyImage(const sensor_msgs::ImageConstPtr &msg)
                 ellipse(mask, center, Size( 600*scale, 600*scale ),                 
                 rotation, 0, (2*laserFOV), 
                 Scalar(255), -1);
-                //ellipse(previousMap, center, Size( 600*scale, 600*scale ),                 
-                //rotation, 0, (360-2*laserFOV), 
-                //Scalar(0), -1);
-                //rvizLaser = cv_bridge::CvImage(std_msgs::Header(), "mono8", currentMap).toImageMsg();
-                //rvizLaser_.publish(rvizLaser);  
-                //rvizRRT = cv_bridge::CvImage(std_msgs::Header(), "mono8", prevMap).toImageMsg();
-                //rvizRRT_.publish(rvizRRT);  
-                //sleep(5); 
                               
                 Mat diff;
-                //absdiff(currentMap(roi), prevMap(roi), diff);
                 diff = currentMap - previousMap;
                 bitwise_and(diff, mask, diff);
-                diff = diff(roi);
-                //rvizLaser = cv_bridge::CvImage(std_msgs::Header(), "mono8", diff).toImageMsg();
-                //rvizLaser_.publish(rvizLaser);  
-                //sleep(5); 
-                
+                diff = diff(roi);                
                 
                 Mat element = getStructuringElement( MORPH_ELLIPSE,
                                        Size( 5,5));
@@ -212,8 +196,6 @@ void skycam::skyImage(const sensor_msgs::ImageConstPtr &msg)
                         velocity_.publish(velocity);                        
                         steering_.publish(steering);                        
                         readyFlag = false;
-                        //imshow("Difference", diff);
-                        //cv::waitKey(1);
                         rvizLaser = cv_bridge::CvImage(std_msgs::Header(), "mono8", diff).toImageMsg();
                         rvizLaser_.publish(rvizLaser);                           
                         sleep(1);
@@ -232,9 +214,6 @@ void skycam::skyImage(const sensor_msgs::ImageConstPtr &msg)
                 {
                         p1 = p2;
                         p2 = p2+skip;                         
-                        //IerrorVelocity = velocity.data/Iv;
-                        //IerrorSteering = 0;
-                        //IerrorSteering2 = 0;
                         if(p1 < route.size() - 1 && p2 >= route.size() )
                         {
                                 p2 = route.size() - 1;
@@ -366,23 +345,15 @@ void skycam::skyImage(const sensor_msgs::ImageConstPtr &msg)
                         steering_.publish(steering);
                 }
         }
-        
-        //imshow("Sky eye", sky_image);         
+               
         rvizImage = cv_bridge::CvImage(std_msgs::Header(), "bgr8", sky_image).toImageMsg();
-        rvizImage_.publish(rvizImage);
-        //setMouseCallback("Sky eye", skycam::onMouseStatic, (void*)&goal);                      
-        //imshow("Detected Map", map);
-        //imshow("Detected Car", car);
-        //imshow("Laser", laserMap);    
-        //imshow("Routes", routes);
-        //cv::waitKey(1);          
+        rvizImage_.publish(rvizImage);        
         rvizRRT = cv_bridge::CvImage(std_msgs::Header(), "bgr8", routes).toImageMsg();
         rvizRRT_.publish(rvizRRT);                                                   
 }                                
 
 void skycam::onMouseStatic( int event, int x, int y, int flags, void* point )
 {
-        //that->onMouse( event,  x, y, flags );
         if(event == CV_EVENT_LBUTTONDOWN) 
         {
                 cv::Point& goal = *(cv::Point*) point;
@@ -431,17 +402,7 @@ void skycam::readLaser(const sensor_msgs::LaserScan &msg)
                 {
                         int x = int((range_max + distances[i] * cos(angle)) * 100 * scale);
                         int y = int((range_max - distances[i] * sin(angle)) * 100 * scale);
-                        //ROS_INFO_STREAM(angle);
-                        //ROS_INFO_STREAM(distances[i]);
-                        //ROS_INFO_STREAM(x);
-                        //ROS_INFO_STREAM(y);
                         laserMap.at<uchar>(y,x) = 255;
-                        //ROS_INFO_STREAM(pixel);             
-                        //pixel[0] = 255;
-                        //pixel[1] = 255;
-                        //pixel[2] = 255;
-                        //laserMap.at<Vec3b>(Point(x,y)) = pixel;
-                        //circle(laserMap, Point(x,y),0,CV_RGB(255,255,255),1);
                 }
         }
         rvizLaser = cv_bridge::CvImage(std_msgs::Header(), "mono8", laserMap).toImageMsg();
@@ -587,8 +548,7 @@ vector<Point> skycam::RRT(Mat analyzedMap, Mat analyzedCar, Point goal, int beam
         
         Point posInit = currentPosition;
         float angInit = currentAngle;
-        
-        //float minCurve = 72; // closest turn radius possible for the car (i.e. at maximum steerling angle); given in centimeters
+                
         float minRad = minCurve * scale * resizeScale;
         float maxDis = floor(minRad * 3.1416);
         float minDis = ceil(minRad/2);
@@ -759,7 +719,6 @@ vector<Point> skycam::RRT(Mat analyzedMap, Mat analyzedCar, Point goal, int beam
                                                 }                                                
                                                 else
                                                 {
-                                                        //testMap.at<uchar>(newY, newX) = 255;
                                                         pixel = dilated.at<uchar>(newY, newX);
                                                 }
                                                 if(pixel == 255)
@@ -786,7 +745,6 @@ vector<Point> skycam::RRT(Mat analyzedMap, Mat analyzedCar, Point goal, int beam
                                         }
                                         else
                                         {
-                                                //testMap.at<uchar>(newY, newX) = 255;
                                                 pixel = dilated.at<uchar>(newY, newX);
                                         }
                                         if(pixel == 255)
@@ -847,21 +805,16 @@ vector<Point> skycam::RRT(Mat analyzedMap, Mat analyzedCar, Point goal, int beam
                                         point3D.y = ((xyzBest[index][1] / resizeScale) / scale) / 100;
                                         point3D.z = 0.2;    
                                         path3D_.publish(point3D);  
-                                        //ROS_INFO_STREAM("Marco...");
                                 }
                                 xyz.clear();                                
-                                //whileFlag = false;  
                                 currentAngle = atan2(YBest,XBest) - 1.5708; 
                                 currentPosition = Point(pathVector.back().x - planeOrigin.x, planeOrigin.y - pathVector.back().y);
                         
                                 //ROS_INFO_STREAM("Final angle: " << currentAngle);
                                 //ROS_INFO_STREAM("Final positon in cartesian plane: " << currentPosition);
-                                //imshow("Sky eye", sky_image);                                        
-                                //imshow("Planned path", testMap + dilated + goalMap);
                                 rvizRRT = cv_bridge::CvImage(std_msgs::Header(), "mono8", (testMap + dilated + goalMap)).toImageMsg();
                                 rvizRRT_.publish(rvizRRT); 
                                 //ROS_INFO_STREAM("Goal resized: " << goal);
-                                //imshow("Car", analyzedCar);
                                 cv::waitKey(1);
                         }                                                                        
                         if(counter2 - counter > beam)
@@ -874,7 +827,6 @@ vector<Point> skycam::RRT(Mat analyzedMap, Mat analyzedCar, Point goal, int beam
                                         closeFlag = true;
                                         counter = beam;
                                         whileFlag = false;
-                                        //ROS_INFO_STREAM("Close flag");
                                 }
                                 xyzBest.clear();   
                                 pathVector.push_back(scaledPosition);                                                           
@@ -891,7 +843,6 @@ vector<Point> skycam::RRT(Mat analyzedMap, Mat analyzedCar, Point goal, int beam
                 }
         }                
                         
-        //imshow("Result", pathMap + analyzedMap + goalMap); 
         point3D.z = 0.4;
         path3D_.publish(point3D);
         return pathVector;
