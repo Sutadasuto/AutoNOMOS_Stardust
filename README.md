@@ -34,6 +34,8 @@ Open the ~/AutoNOMOS_Stardust/AutoNOMOS_simulation folder in terminal. Then
 $ catkin_make
 $ source ~/.bashrc
 
+OPTIONAL (HIGHLY RECOMMENDED): You can make the Rviz config of the AutoNOMOS_Stardust your default Rviz config. To do this, find the dafault.rviz file in the root of the repository, copy it and paste it in the next location: /home/user/.rviz (note that the .rviz folder is hidden). The system will ask you if you want to replace the file and you should accept; however, it is highly recommendable that you back up your original file first, so you can restore it later for future projects. If you don't wish to replace the config file, you should open this config file everytime you open Rviz to use it with the AutoNOMOS_Stardust project.
+
 The system should be ready for use. In terminal, run
 
 $ roslaunch autonomos_gazebo my_world.launch 
