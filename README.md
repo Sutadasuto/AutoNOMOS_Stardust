@@ -28,8 +28,6 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/sutadasuto/AutoNOMOS_Stardust/Ga
 
 (Be sure to replace "/home/sutadasuto" for the path where you downloaded the repo. Save the file and close it)
 
-$ source ~/.bashrc
-
 **Building the project:
 
 Open the ~/AutoNOMOS_Stardust/AutoNOMOS_simulation folder in terminal. Then
