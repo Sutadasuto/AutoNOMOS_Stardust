@@ -8,7 +8,7 @@
         <node pkg="using_markers" type="draw" name="using_markers" output="screen">	
 	</node>	
         
-        <node pkg="tecladoCilindro" type="tecladoCilindro" name="tecladoCilindro" output="screen">	
+        <node pkg="cylinder_keyboard" type="cylinder_keyboard" name="cylinder_keyboard" output="screen">	
 	</node>	
 
 </launch>

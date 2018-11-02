@@ -24,9 +24,9 @@ $ sudo  gedit ~/.bashrc
 In the file opened by this command, add the next lines at the end:
 
 source /home/sutadasuto/AutoNOMOS_Stardust/AutoNOMOS_simulation/devel/setup.bash
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/sutadasuto/AutoNOMOS_Stardust/Gazebo_plugin/build
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/path/to/project/AutoNOMOS_Stardust/Gazebo_plugin/build
 
-(Be sure to replace "/home/sutadasuto" for the path where you downloaded the repo. Save the file and close it)
+(Be sure to replace "/path/to/project" for the path where you downloaded the repo. Save the file and close it)
 
 **Building the project:
 

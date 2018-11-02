@@ -1,416 +1,274 @@
 #include "skycam.h"
 
-skycam::skycam():
+Skycam::Skycam():
 	nh_("~"), it_(nh_)
 {
 	ROS_INFO("Init image_viewer");
-	sky_image_ = it_.subscribe("/sky_camera/image_raw", 1, &skycam::skyImage, this);
-        laser_ = nh_.subscribe("/laser_scan", 10, &skycam::readLaser, this);        
-        velocity_ = nh_.advertise<std_msgs::Float32>("/AutoNOMOS_mini/manual_control/velocity", 3);
-	steering_ = nh_.advertise<std_msgs::Float32>("/AutoNOMOS_mini/manual_control/steering", 3);
+	laser_ = nh_.subscribe("/laser_scan", 10, &Skycam::ReadLaser, this);        
+    sky_image_receiver_ = it_.subscribe("/sky_camera/image_raw", 1, &Skycam::SkyImage, this);
+    steering_publisher_ = nh_.advertise<std_msgs::Float32>("/AutoNOMOS_mini/manual_control/steering", 3);
+    velocity_publisher_ = nh_.advertise<std_msgs::Float32>("/AutoNOMOS_mini/manual_control/velocity", 3);	
         
-        //Para mover el cilindro
-        states_ = nh_.subscribe("/gazebo/model_states", 10, &skycam::getStates, this);
-        key_ = nh_.subscribe("/cylinder/keyboard", 10, &skycam::moveCylinder, this);
-        state_ = nh_.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 3);        
-        
-        //Para Rviz
-        path3D_ = nh_.advertise<geometry_msgs::Point>("/skycam/plannedPath", 10);
-        goal2D_ = nh_.subscribe("/move_base_simple/goal", 10, &skycam::goalFromRviz, this);
-        rvizImage_ = nh_.advertise<sensor_msgs::Image>("/skycam/sky_image", 10);
-        rvizLaser_ = nh_.advertise<sensor_msgs::Image>("/skycam/laser_image", 10);
-        rvizRRT_ = nh_.advertise<sensor_msgs::Image>("/skycam/RRT", 10);
-                
-        nh_.getParam("flag1", flag1);
-        nh_.getParam("flag", flag);
-        nh_.getParam("scale", scale); //pixels per centimeter
-        nh_.getParam("resizeScale", resizeScale);
-        nh_.getParam("minCurve", minCurve); 
-        minCurve = minCurve; // * 1.1;
-        nh_.getParam("beam", beam); 
-        nh_.getParam("angle", angle); 
-        nh_.getParam("velRange", velRange);
-        nh_.getParam("steerRange", steerRange);
-        nh_.getParam("errorTolerance", errorTolerance);
-        nh_.getParam("skip", skip);
-        nh_.getParam("Pv", Pv);
-        nh_.getParam("Iv", Iv);
-        nh_.getParam("Dv", Dv);
-        nh_.getParam("Ps", Ps);
-        nh_.getParam("Is", Is);
-        nh_.getParam("Ds", Ds);
-        nh_.getParam("Ps2", Ps2);
-        nh_.getParam("Is2", Is2);
-        nh_.getParam("Ds2", Ds2);
-        nh_.getParam("alpha", alpha);
-        nh_.getParam("laserFOV", laserFOV);
-        nh_.getParam("laserRange", laserRange);
-        nh_.getParam("obstacleThreshold", obstacleThreshold);
-        newObstacleFlag = false;
-        closeFlag = false;
-        deadPathCounter= 0;        
-        prevErrorVelocity = 0;
-        prevErrorSteering = 0;
-        prevErrorSteering2 = 0;
-        IerrorVelocity = 0;
-        IerrorSteering = 0;
-        IerrorSteering2 = 0;
-        DerrorVelocity = 0;
-        DerrorSteering = 0;
-        DerrorSteering2 = 0;
-        
-        testNum = 0;
-        routes = Mat(640, 640, CV_8UC3, Scalar(255,255,255));
-        
-        goal.x = -1;
-        goal.y = -1;       
-        laserMap = Mat::zeros(640, 640, CV_8UC1);
-        
-        axis = tf::Vector3(0,0,1);                       
+    // For cylinder moving    
+    key_ = nh_.subscribe("/cylinder/keyboard", 10, &Skycam::MoveCylinder, this);
+    state_publisher_ = nh_.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 3);   
+    states_ = nh_.subscribe("/gazebo/model_states", 10, &Skycam::GetStates, this);
+    
+    // For Rviz
+    goal2D_ = nh_.subscribe("/move_base_simple/goal", 10, &Skycam::GoalFromRviz, this);
+    path3D_ = nh_.advertise<geometry_msgs::Point>("/skycam/plannedPath", 10);    
+    rviz_image_publisher_ = nh_.advertise<sensor_msgs::Image>("/skycam/sky_image", 10);
+    rviz_laser_publisher_ = nh_.advertise<sensor_msgs::Image>("/skycam/laser_image", 10);
+    rviz_rrt_publisher_ = nh_.advertise<sensor_msgs::Image>("/skycam/RRT", 10);
+            
+    nh_.getParam("pixels_per_centimeter_", pixels_per_centimeter_); //pixels per centimeter
+    nh_.getParam("resize_grid_scale_", resize_grid_scale_);
+    nh_.getParam("min_curve_radius_", min_curve_radius_); 
+    nh_.getParam("beam_", beam_);
+    nh_.getParam("vel_range_", vel_range_);
+    nh_.getParam("steer_range_", steer_range_);
+    nh_.getParam("max_error_tolerance_", max_error_tolerance_);
+    nh_.getParam("index_skip_", index_skip_);
+    nh_.getParam("P_velocity_", P_velocity_);
+    nh_.getParam("I_velocity_", I_velocity_);
+    nh_.getParam("D_velocity_", D_velocity_);
+    nh_.getParam("P_line_", P_line_);
+    nh_.getParam("I_line_", I_line_);
+    nh_.getParam("D_line_", D_line_);
+    nh_.getParam("P_orientation_", P_orientation_);
+    nh_.getParam("I_orientation_", I_orientation_);
+    nh_.getParam("D_orientation_", D_orientation_);
+    nh_.getParam("alpha_", alpha_);
+    nh_.getParam("laser_fov_", laser_fov_);
+    nh_.getParam("laser_obstacle_range_", laser_obstacle_range_);
+    nh_.getParam("obstacle_threshold_", obstacle_threshold_);
+    
+    goal_selected_ = false;
+    state_machine_ = 1;
+    object_near_ = false;
+    object_too_close_ = false; 
+    prev_error_velocity_ = 0;
+    prev_error_line_ = 0;
+    prev_error_orientation_ = 0;
+    integral_error_velocity_ = 0;
+    integral_error_line_ = 0;
+    integral_error_orientation_ = 0;
+    
+    goal_.x = -1;
+    goal_.y = -1;       
+    laser_map_ = Mat::zeros(640, 640, CV_8UC1);                    
 }
 
-skycam::~skycam()
+Skycam::~Skycam()
 {
 
 }
 
-void skycam::skyImage(const sensor_msgs::ImageConstPtr &msg)
-{	
-        //Get image from cam
-        if(goal.x > 0) flag1 = true;
-	try
-	{
-		cv_ptr_1 = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-	}
-	catch (cv_bridge::Exception& e)
-	{
-		ROS_ERROR("cv_bridge exception: %s", e.what());
-		return;
-	}	
-	sky_image = cv_ptr_1->image;                       
-        
-        cvtColor(sky_image, lab, COLOR_BGR2Lab);
-        split(lab,labChannels);       
-                 
-        threshold(labChannels[1], map, 140, 255, 0);        
-        threshold(labChannels[1], car, 70, 255, 1); 
-        Mat element = getStructuringElement( MORPH_RECT,
-                                       Size( 10,10));
-        dilate(car, car, element);       
-        
-        position = skycam::getPosition(car);
-
-        
-        //Draw Goal	
-        Point center = goal;
-        circle(sky_image, center,1,CV_RGB(0,0,255),5);
-        
-        if(flag1 == true && flag == 1)
-        {       
-                if(readyFlag == true)
-                {                    
-                        routes = Mat(640, 640, CV_8UC3, Scalar(255,255,255));                   
-                        route = skycam::RRT(map, car, goal, beam, scale, angle); 
-                        if(route.size() > 1)
-                        {                
-                                for (int point = 0; point < route.size(); point++)
-                                {
-                                        route[point].x = route[point].x/resizeScale;
-                                        route[point].y = route[point].y/resizeScale; 
-                                        circle(routes, route[point],1,CV_RGB(0,0,255),2);                                                                                       
-                                }
-                                p1 = 0; 
-                                p2 = skip;  
-                                if(p1 < route.size() - 1 && p2 >= route.size() )
-                                {
-                                        p2 = route.size() - 1;
-                                }                                
-                                speedLimit = velRange;
-                                closeFlag = false;                             
-                                flag = 2; 
-                                beginTrack = true;
-                        }
-                }  
-                else
-                {
-                        ROS_INFO_STREAM("Waiting orientation");
-                }                     
-        }
-        
-        if(closeFlag == true)
-        {
-                velocity.data = -5;
-                steering.data = 0;
-                velocity_.publish(velocity);                        
-                steering_.publish(steering);
-                sleep(1);
-                velocity.data = 0;
-                velocity_.publish(velocity); 
-        }
-                
-        
-        if(route.size() > 1)
-        {
-                for (int point = 0; point < route.size(); point++)
-                {
-                        circle(sky_image, route[point],1,CV_RGB(0,0,255),5);                        
-                }
-        } 
-        
-        
-        if(newObstacleFlag == true) 
-        {                
-                
-                Mat currentMap = map.clone();
-                Mat previousMap = prevMap.clone();
-                Mat mask = Mat::zeros(currentMap.rows, currentMap.cols, CV_8UC1);
-                Point center = skycam::getPosition(car);
-                float rotation = (-angle * 180 / 3.1416) - laserFOV;
-                cv::Rect _rectangle = cv::Rect(int(center.x - laserMap.cols/2), 
-                int(center.y - laserMap.rows/2), int(2*laserMap.cols/2), int(2*laserMap.rows/2));
-                cv::Rect roi = _rectangle & cv::Rect(0, 0, currentMap.cols, currentMap.rows);                                                         
-                
-                ellipse(mask, center, Size( 600*scale, 600*scale ),                 
-                rotation, 0, (2*laserFOV), 
-                Scalar(255), -1);
-                              
-                Mat diff;
-                diff = currentMap - previousMap;
-                bitwise_and(diff, mask, diff);
-                diff = diff(roi);                
-                
-                Mat element = getStructuringElement( MORPH_ELLIPSE,
-                                       Size( 5,5));
-                erode(diff, diff, element);
-                dilate(diff, diff, element);
-                
-                
-                double s = cv::sum( diff )[0] / 255;       
-                
-                
-                if(s >= obstacleThreshold)
-                {                        
-                        flag = 1;
-                        velocity.data = 0;
-                        steering.data = 0;
-                        velocity_.publish(velocity);                        
-                        steering_.publish(steering);                        
-                        readyFlag = false;
-                        rvizLaser = cv_bridge::CvImage(std_msgs::Header(), "mono8", diff).toImageMsg();
-                        rvizLaser_.publish(rvizLaser);                           
-                        sleep(1);
-                }
-        }
-        
-        if(flag == 2)
-        {                
-                float errorNorm = cv::norm(route[p2]-position);
-                circle(routes, position,1,CV_RGB(0,255,0),1);  
-                //ROS_INFO_STREAM("P1: " << p1 << " P2: " << p2);
-                //ROS_INFO_STREAM("Last Index = " << route.size()-1);
-                //ROS_INFO_STREAM("Carro: " << position << " Meta: " << route[p2]);
-                //ROS_INFO_STREAM("Error Norm: " << errorNorm);
-                if(errorNorm < errorTolerance)
-                {
-                        p1 = p2;
-                        p2 = p2+skip;                         
-                        if(p1 < route.size() - 1 && p2 >= route.size() )
-                        {
-                                p2 = route.size() - 1;
-                        }
-                        if(p1 == route.size() - 1)
-                        {                                
-                                velocity.data = 0;
-                                steering.data = 0;
-                                IerrorVelocity = 0;
-                                IerrorSteering = 0;
-                                IerrorSteering2 = 0;
-                                DerrorVelocity = 0;
-                                DerrorSteering = 0;
-                                DerrorSteering2 = 0;
-                                
-                                ROS_INFO_STREAM("Success!!!!");
-                                geometry_msgs::Point point3D; 
-                                point3D.z = 0;
-                                path3D_.publish(point3D);
-                                goal.x = -1;
-                                goal.y = -1;
-                                flag1 = false;
-                                velocity_.publish(velocity);                        
-                                steering_.publish(steering);
-                                flag = 1;
-                                flag1 = false;
-                                filename = "/home/sutadasuto/EK_AutoNOMOS/pathFollowing" + std::to_string(testNum) + ".csv";
-                                ofstream myfile;                                
-                                myfile.open(filename.c_str());      
-                                for(int i=0; i<errorSteeringVector.size(); i++)
-                                {
-                                        myfile << errorSteeringVector[i]/scale;
-                                        if(i < errorSteeringVector.size()) myfile << ",";
-                                        else myfile << std::endl;
-                                }
-                                myfile.close();                                
-                                testNum++;
-                                route.clear();
-                        }
-                        else
-                        {
-                                speedLimit = velRange * (route.size() - p1/1.33)/route.size();
-                        }
-                }
-                else
-                {
-                        direction = atan2(route[p2].y - route[p1].y, route[p2].x - route[p1].x);
-                        positionVector = tf::Vector3(position.x, position.y, 0);
-                        originVector = tf::Vector3(route[p1].x, route[p1].y, 0);
-                        goalVector = tf::Vector3(route[p2].x, route[p2].y, 0);
-                        q = tf::Quaternion(axis, -direction);
-                        R = tf::Matrix3x3(q);
-                        
-                        // Velocity errors
-                        goalVector = R*(goalVector - originVector);
-                        positionVector = R*(positionVector - originVector);
-                        errorVelocity = (goalVector[0] - positionVector[0]) / scale;
-                        if(beginTrack == true)
-                        {
-                                prevErrorVelocity = errorVelocity;
-                        }
-                        IerrorVelocity = IerrorVelocity + errorVelocity;    
-                        DerrorVelocity = errorVelocity - prevErrorVelocity; 
-                        prevErrorVelocity = errorVelocity;     
-                        if(abs(IerrorVelocity * Iv) > speedLimit) IerrorVelocity = (speedLimit/Iv) * (IerrorVelocity/abs(IerrorVelocity));
-                        
-                        // Line errors
-                        errorSteering = -(goalVector[1] - positionVector[1]) / scale;   
-                        errorSteeringVector.push_back(errorSteering);
-                        goalPointsVector.push_back(p2);
-                        if(beginTrack == true)
-                        {
-                                prevErrorSteering = errorSteering;
-                        }                     
-                        IerrorSteering = IerrorSteering + errorSteering; 
-                        DerrorSteering = errorSteering - prevErrorSteering;
-                        prevErrorSteering = errorSteering;
-                        if(abs(IerrorSteering * Is) > steerRange) IerrorSteering = (steerRange/Is) * (IerrorSteering/abs(IerrorSteering));
-                        
-                        // Orientation errors                
-                        tf::Vector3 refAxis(0,0,1);
-                        tf::Quaternion q0(refAxis, -direction);         
-                        tf::Matrix3x3 Rimu(q0);
-                        Rd = Rimu;   
-                        Rd = Rd.transpose();                         
-                        Re = Rd * Rt;
-                        y = inverseHatMap(Re);                                
-                        y *= asin(y.length())/y.length();                                                                
-                        errorSteering2 = y[2]; 
-                        if(beginTrack == true)
-                        {
-                                prevErrorSteering2 = errorSteering2;
-                                beginTrack = false;
-                        }                        
-                        IerrorSteering2 = IerrorSteering2 + errorSteering2; 
-                        DerrorSteering2 = errorSteering2 - prevErrorSteering2;
-                        prevErrorSteering2 = errorSteering2;
-                        if(abs(IerrorSteering2 * Is2) > steerRange) IerrorSteering2 = (steerRange/Is2) * (IerrorSteering2/abs(IerrorSteering2));
-                        
-                        // Velocity PID
-                        velocity.data = Pv * errorVelocity + Iv * IerrorVelocity + Dv * DerrorVelocity;                                                
-                        if(abs(velocity.data) > speedLimit) velocity.data = speedLimit * velocity.data/abs(velocity.data);
-                        
-                        // Steering PID
-                        steering.data = Ps * errorSteering + Is * IerrorSteering + Ds * DerrorSteering;                        
-                        steering.data = (1-alpha) * steering.data + alpha * (Ps2 * errorSteering2 + Is2 * IerrorSteering2 + Ds2 * DerrorSteering2);                                                
-                        if(abs(steering.data) > steerRange) steering.data = steerRange * steering.data/abs(steering.data); 
-                        
-                        // Adjust velocity in curves                       
-                        float curveLimit = velRange * (1 - (exp(abs(steering.data) * log(1.8)/70) - 1)); 
-                        if(abs(velocity.data) > abs(curveLimit)) velocity.data =  curveLimit * velocity.data/abs(velocity.data); 
-                        if(velocity.data < 0) steering.data = -0.5 * steering.data; 
-                        //ROS_INFO_STREAM("Goal: X' = " << goalVector[0] << " Y' = " << goalVector[1]);
-                        //ROS_INFO_STREAM("Position: X' = " << positionVector[0] << " Y' = " << positionVector[1]);
-                        //ROS_INFO_STREAM("Error Velocity: " << errorVelocity);
-                        //ROS_INFO_STREAM("I Velocity: " << IerrorVelocity);
-                        //ROS_INFO_STREAM("D Velocity: " << DerrorVelocity);
-                        //ROS_INFO_STREAM("Error Steering: " << errorSteering);   
-                        //ROS_INFO_STREAM("I Steering: " << IerrorSteering);
-                        //ROS_INFO_STREAM("D Steering: " << DerrorSteering);  
-                        ////ROS_INFO_STREAM("Angle = " << angle << " Direction  = " << -direction);                   
-                        //ROS_INFO_STREAM("Error Steering 2: " << errorSteering2);                        
-                        //ROS_INFO_STREAM("I Steering 2: " << IerrorSteering2);
-                        //ROS_INFO_STREAM("D Steering 2: " << DerrorSteering2);                     
-                        ////ROS_INFO_STREAM("Speed Limit: " << speedLimit);                                           
-                        //ROS_INFO_STREAM("Velocity: " << velocity.data);
-                        //ROS_INFO_STREAM("Steering: " << steering.data);
-                        velocity_.publish(velocity);                        
-                        steering_.publish(steering);
-                }
-        }
-               
-        rvizImage = cv_bridge::CvImage(std_msgs::Header(), "bgr8", sky_image).toImageMsg();
-        rvizImage_.publish(rvizImage);        
-        rvizRRT = cv_bridge::CvImage(std_msgs::Header(), "bgr8", routes).toImageMsg();
-        rvizRRT_.publish(rvizRRT);                                                   
-}                                
-
-void skycam::onMouseStatic( int event, int x, int y, int flags, void* point )
+bool Skycam::NewObjectInPath()
 {
-        if(event == CV_EVENT_LBUTTONDOWN) 
-        {
-                cv::Point& goal = *(cv::Point*) point;
-                goal.x = x;
-                goal.y = y;
-                ROS_INFO_STREAM(goal);        
-        }
+    float degrees_per_radian = 180/M_PI;
+    int laser_range = 600; // given in centimeters
+    Mat current_map = GetOccupancyGrid(sky_image_);
+    Mat previous_map = previous_map_.clone();    
+    
+    // Get an image representing the laser reach in its Field Of View
+    Mat mask = Mat::zeros(current_map.rows, current_map.cols, CV_8UC1);
+    Point center = Skycam::GetPosition(GetCarMap(sky_image_));
+    float rotation = (-current_yaw_ * degrees_per_radian) - laser_fov_;
+    cv::Rect rectangle = cv::Rect(int(center.x - laser_map_.cols/2), 
+        int(center.y - laser_map_.rows/2), int(2*laser_map_.cols/2), int(2*laser_map_.rows/2));
+    cv::Rect roi = rectangle & cv::Rect(0, 0, current_map.cols, current_map.rows);                                                                     
+    ellipse(mask, center, Size(laser_range*pixels_per_centimeter_, laser_range*pixels_per_centimeter_ ),                 
+    rotation, 0, (2*laser_fov_), Scalar(255), -1);
+    
+    // Get the difference between the current map and the old map in the Region Of Interest           
+    Mat diff = current_map - previous_map;    
+    bitwise_and(diff, mask, diff);
+    diff = diff(roi);             
+    Mat element = getStructuringElement( MORPH_ELLIPSE, Size( 5,5));
+    erode(diff, diff, element);
+    dilate(diff, diff, element);
+        
+    double absolute_difference = cv::sum(diff)[0] / 255; 
+    if(absolute_difference >= obstacle_threshold_)
+    {
+        // The object in front of the car wasn't there when tha path was planned. New path required.
+        state_machine_ = 1;
+        velocity_.data = 0;
+        steering_.data = 0;
+        velocity_publisher_.publish(velocity_);                        
+        steering_publisher_.publish(steering_);                        
+        status_ok_ = false;
+        // Show the analyzed conflicting area
+        rviz_laser_ = cv_bridge::CvImage(std_msgs::Header(), "mono8", diff).toImageMsg();
+        rviz_laser_publisher_.publish(rviz_laser_);                           
+        sleep(1);
+        return true;
+    }
+    else return false;
 }
 
-void skycam::goalFromRviz(const geometry_msgs::PoseStamped &goalRviz)
-{
-        goal.x = int(goalRviz.pose.position.x * 100 * scale + sky_image.cols / 2);
-        goal.y = int(sky_image.cols / 2 - goalRviz.pose.position.y * 100 * scale);
-        ROS_INFO_STREAM(goal);  
-}
+float* Skycam::GetControlActions(vector<Point> planned_path, Point current_position, 
+    int& local_starting_point, int& local_goal_point){
+        
+    float *control_actions = new float[2]; // [velocity, steering]
+    float speed_limit;
+    float velocity_data, steering_data;
+    float error_velocity, error_line, error_orientation;  
+    float derivative_error_velocity, derivative_error_line, derivative_error_orientation;
+    tf::Vector3 z_axis(0,0,1);
 
-void skycam::readLaser(const sensor_msgs::LaserScan &msg)
-{
-        newObstacleFlag = false;
-        vector<float> distances;
-        distances = msg.ranges;
-        float angle;
-        float angle_min = msg.angle_min;
-        float orientation = 1.5708;
-        float angle_increment = msg.angle_increment;
-        float range_max = msg.range_max/3;        
-        
-        laserMap = Mat::zeros(int(range_max*100*scale*2 + 1), int(range_max*100*scale*2 + 1), CV_8UC1);  
-               
-        
-        for (int i = 0; i < distances.size(); i++)
+    float local_error = cv::norm(planned_path[local_goal_point]-current_position);
+    if(local_error < max_error_tolerance_)
+    {
+        local_starting_point = local_goal_point;
+        local_goal_point = local_goal_point + index_skip_;                         
+        if(local_starting_point < planned_path.size() - 1 && local_goal_point >= planned_path.size() )
         {
-                angle = angle_min + orientation + i*angle_increment;
-                
-                if(angle_min + i*angle_increment < laserFOV * 3.1416/180.0 || 
-                angle_min + i*angle_increment > 6.2832 - laserFOV * 3.1416/180.0)
-                {
-                        if(distances[i] <= laserRange && distances[i] >= 0.10)
-                        {
-                                newObstacleFlag = true;                                
-                                ROS_INFO_STREAM("Obstacle detected at " << distances[i]);
-                        }
-                }
-                
-                if(abs(distances[i]) <= range_max && distances[i] >= 0.10)
-                {
-                        int x = int((range_max + distances[i] * cos(angle)) * 100 * scale);
-                        int y = int((range_max - distances[i] * sin(angle)) * 100 * scale);
-                        laserMap.at<uchar>(y,x) = 255;
-                }
+                // Local goal is last point
+                local_goal_point = planned_path.size() - 1;
         }
-        rvizLaser = cv_bridge::CvImage(std_msgs::Header(), "mono8", laserMap).toImageMsg();
-        rvizLaser_.publish(rvizLaser);         
+        // The vehicle is at goal
+        if(local_starting_point == planned_path.size() - 1)
+        {            
+            FinishTrack();
+            control_actions[0] = 0;
+            control_actions[1] = 0;
+            return control_actions;
+        }  
+    }
+    // Define a speed limit proportional to the distance to the final goal
+    speed_limit = vel_range_ * (planned_path.size() - local_starting_point/1.33)/planned_path.size();
+    
+    float local_line_orientation = atan2(planned_path[local_goal_point].y - planned_path[local_starting_point].y,
+        planned_path[local_goal_point].x - planned_path[local_starting_point].x);
+    tf::Vector3 current_position_vector = tf::Vector3(current_position.x, current_position.y, 0);
+    tf::Vector3 local_origin = tf::Vector3(planned_path[local_starting_point].x, planned_path[local_starting_point].y, 0);
+    tf::Vector3 goal_vector = tf::Vector3(planned_path[local_goal_point].x, planned_path[local_goal_point].y, 0);
+    // Here we get the rotation matrix corresponding to the orientation of the local line to follow
+    tf::Quaternion q = tf::Quaternion(z_axis, -local_line_orientation);
+    tf::Matrix3x3 r = tf::Matrix3x3(q);
+    
+    // Velocity errors
+    tf::Vector3 local_goal_vector = r*(goal_vector - local_origin);
+    tf::Vector3 local_current_position_vector = r*(current_position_vector - local_origin);
+    // We calculate the error along the local x axis        
+    error_velocity = (local_goal_vector[0] - local_current_position_vector[0]) / pixels_per_centimeter_;
+    if(first_move_ == true)
+    {
+        prev_error_velocity_ = error_velocity;
+    }
+    integral_error_velocity_ = integral_error_velocity_ + error_velocity;    
+    derivative_error_velocity = error_velocity - prev_error_velocity_; 
+    prev_error_velocity_ = error_velocity;     
+    // If the accumulated integral error is greater than the speed limit, we force it down so 
+    // that it results 1 when multiplied by the integral constant
+    if(abs(integral_error_velocity_ * I_velocity_) > speed_limit){
+        integral_error_velocity_ = (speed_limit/I_velocity_) * (integral_error_velocity_/abs(integral_error_velocity_));
+    }
+    
+    // Line errors
+    error_line = -(local_goal_vector[1] - local_current_position_vector[1]) / pixels_per_centimeter_;   
+    // The next commented line is used for evaluation purposes
+    // errorSteeringVector.push_back(errorSteering);        
+    if(first_move_ == true)
+    {
+            prev_error_line_ = error_line;
+    }                     
+    integral_error_line_ = integral_error_line_ + error_line; 
+    derivative_error_line = error_line - prev_error_line_;
+    prev_error_line_ = error_line;
+    // Same as we did with velocity when the accumulated integral error was out of range
+    if(abs(integral_error_line_ * I_line_) > steer_range_){
+        integral_error_line_ = (steer_range_/I_line_) * (integral_error_line_/abs(integral_error_line_));
+    }
+    
+    // Orientation errors  
+    // Please refer to the chapter to look for the paper from which this calcs were coded
+    tf::Quaternion q0(z_axis, -local_line_orientation);         
+    tf::Matrix3x3 Rd(q0);
+    Rd = Rd.transpose();                         
+    tf::Matrix3x3 Re = Rd * Rt_;
+    tf::Vector3 y = InverseHatMap(Re);                                
+    y *= asin(y.length())/y.length(); 
+    // The index 2 corresponds to the z-axis                                                               
+    error_orientation = y[2]; 
+    if(first_move_ == true)
+    {
+            prev_error_orientation_ = error_orientation;
+            first_move_ = false;
+    }                        
+    integral_error_orientation_ = integral_error_orientation_ + error_orientation; 
+    derivative_error_orientation = error_orientation - prev_error_orientation_;
+    prev_error_orientation_ = error_orientation;
+    // The same as with the line integral error when it overflows the maximum range
+    if(abs(integral_error_orientation_ * I_orientation_) > steer_range_) integral_error_orientation_ = (steer_range_/I_orientation_) * (integral_error_orientation_/abs(integral_error_orientation_));
+    
+    // Velocity PID
+    velocity_data = P_velocity_ * error_velocity + 
+        I_velocity_ * integral_error_velocity_ + 
+        D_velocity_ * derivative_error_velocity;
+    // Be sure the ouput signal is within the accepted range
+    if(abs(velocity_data) > speed_limit) velocity_data = speed_limit * velocity_data/abs(velocity_data);                
+    
+    // Steering PID
+    steering_data = P_line_ * error_line + 
+        I_line_ * integral_error_line_ +
+        D_line_ * derivative_error_line;                        
+    // Here we do the weighted sum of line and orientation PIDs
+    steering_data = (1-alpha_)*steering_data + 
+        alpha_*(P_orientation_ * error_orientation + 
+                I_orientation_ * integral_error_orientation_ + 
+                D_orientation_ * derivative_error_orientation);                                                
+    // Be sure the ouput signal is within the accepted range
+    if(abs(steering_data) > steer_range_) steering_data = steer_range_ * steering_data/abs(steering_data); 
+    
+    // Adjust velocity in curves    
+    // The velocity decreases exponentially, being 20% of the maximum velocity at maximum steering
+    float curve_limit = vel_range_ * (1 - (exp(abs(steering_data) * log(1.8)/steer_range_) - 1)); 
+    if(abs(velocity_data) > abs(curve_limit)) velocity_data =  curve_limit * velocity_data/abs(velocity_data); 
+    
+    // For worst case scenario when the AutoNOMOS needs to move backwards, the steering needs to change direction
+    if(velocity_data < 0) steering_data = -0.5 * steering_data; 
+    
+    control_actions[0] = velocity_data;        
+    control_actions[1] = steering_data;
+    return control_actions;
+}                     
+
+Mat Skycam::GetCarMap(Mat sky_image)
+{
+    Mat car_map;
+    int green_lower_bound = 70;
+    int green_upper_bound = 255; 
+    Mat lab_space_image;
+	Mat lab_channels[3];
+        
+    cvtColor(sky_image, lab_space_image, COLOR_BGR2Lab);
+    split(lab_space_image,lab_channels);       
+             
+    threshold(lab_channels[1], car_map, green_lower_bound, green_upper_bound, 1); 
+    Mat element = getStructuringElement( MORPH_RECT,
+                                   Size( 10,10));
+    dilate(car_map, car_map, element);
+    return car_map;
 }
 
+Mat Skycam::GetOccupancyGrid(Mat sky_image)
+{
+    Mat occupancy_grid;
+    int red_lower_bound = 140;
+    int red_upper_bound = 255;
+    Mat lab_space_image;
+	Mat lab_channels[3];
+    
+    cvtColor(sky_image, lab_space_image, COLOR_BGR2Lab);
+    split(lab_space_image,lab_channels);  
+    threshold(lab_channels[1], occupancy_grid, red_lower_bound, red_upper_bound, 0);   
+    return occupancy_grid;
+}
 
-Point skycam::getPosition(Mat carMap)
+Point Skycam::GetPosition(Mat carMap)
 {
         vector<vector<Point> > contours;
         vector<Vec4i> hierarchy;   
@@ -442,408 +300,619 @@ Point skycam::getPosition(Mat carMap)
         return calculatedPosition;
 }
 
-
-void skycam::getStates(const gazebo_msgs::ModelStates &msg)
+tf::Vector3 Skycam::InverseHatMap(tf::Matrix3x3 re)
 {
-        for(int model = 0; model < msg.name.size(); model++)
-        {
-                if(msg.name[model] == "unit_cylinder_0")
-                {
-                        state.model_name = msg.name[model];
-                        state.pose = msg.pose[model];
-                        state.twist = msg.twist[model];
-                }
-                if(msg.name[model] == "AutoNOMOS_mini")
-                {
-                        float imuX = msg.pose[model].orientation.x;
-                        float imuY = msg.pose[model].orientation.y;
-                        float imuZ = msg.pose[model].orientation.z;
-                        float imuW = msg.pose[model].orientation.w;
-                        
-                        tf::Quaternion q1(imuX,imuY,imuZ,imuW);
-                        tf::Matrix3x3 m(q1);
-                        Rt = m;
-                        
-                        double roll, pitch, yaw;
-                        m.getRPY(roll, pitch, yaw);
-                        angle = float(yaw);
-                        //ROS_INFO_STREAM("Yaw: " << angle);
-                        readyFlag = true;                       
-                }
-        }
-}
-
-void skycam::moveCylinder(const std_msgs::Int8 &key)
-{        
-        if(key.data == 1)
-        {
-                state.pose.position.y =  state.pose.position.y + 0.1;
-        }
-        else if(key.data == 2)
-        {
-                state.pose.position.x =  state.pose.position.x + 0.1;
-        }
-        else if(key.data == 3)
-        {
-                state.pose.position.y =  state.pose.position.y - 0.1;
-        }
-        else if(key.data == 4)
-        {
-                state.pose.position.x =  state.pose.position.x - 0.1;
-        }
-        
-        state_.publish(state);
-}
-
-tf::Vector3 skycam::inverseHatMap(tf::Matrix3x3 re)
-{
-        tf::Matrix3x3 reNormal(re);
-        tf::Matrix3x3 trans(re.transpose());
+        tf::Matrix3x3 transposed(re.transpose());
         for( int i = 0; i < 3; i += 1 )
         {
                 for( int j = 0; j < 3; j += 1 )
                 {
-                        reNormal[i][j] -= trans[i][j];
+                        re[i][j] -= transposed[i][j];
                 }
         }
         
-        tf::Vector3 y(0.5*reNormal[2][1],0.5*reNormal[0][2],0.5*reNormal[1][0]);
+        tf::Vector3 y(0.5*re[2][1],0.5*re[0][2],0.5*re[1][0]);
                         
         return y;
 }
 
-vector<Point> skycam::RRT(Mat analyzedMap, Mat analyzedCar, Point goal, int beam, float scale, float angle)
-{
-        geometry_msgs::Point point3D;    
-        point3D.z = 0;   
-        path3D_.publish(point3D);
-        prevMap = analyzedMap.clone();
-        float currentAngle = angle - 1.5708; //+ 1.5708;                
-        //ROS_INFO_STREAM("Current Angle: " << currentAngle);                
+vector<Point> Skycam::RRT(Mat map_to_analyze, Mat car_map, Point goal, int beam, float scale, float car_pose)
+{    
+    bool draw_paths = true;
+    double slope;        
+    double x, y;
+    double x_best, y_best;
+    
+    float camera_rotation_respect_to_world = M_PI_2;
+    float centimeters_per_meter = 100;
+    float current_angle = car_pose - camera_rotation_respect_to_world; 
+    float distance_to_move;
+    float horizontal_neighborhood = 50, vertical_neighborhood = 40;    
+    float min_expected_cost;
+    float min_radius = min_curve_radius_*scale*resize_grid_scale_, min_distance_to_move = ceil(min_radius/2), max_distance_to_move = floor(min_radius*M_PI);    
+    float radius, angle;
+    float x_target, y_target, y0;        
+    
+    geometry_msgs::Point path_point_3d;   
+     
+    int center;    
+    int counter, counter2;
+    int death_path_counter = 0;
+    int death_path_limit = 100;
+    int goal_radius = 20, structuring_element_radius = 25;
+    int maximum_radius = 139;    
+    int quadrant;
+    
+    Scalar white = Scalar(255,255,255); 
+    
+    vector<Point> planned_path;
+    
+    vector<tf::Vector3> visited_3d_points;
+    vector<tf::Vector3> best_visited_3d_points;     
         
-        tf::Vector3 goalVector(goal.x, goal.y, 0);
-        goalVector *= resizeScale;
-        Mat goalMap = Mat::zeros(analyzedMap.rows, analyzedMap.cols, CV_8UC1);
-        circle(goalMap, goal, 20*scale, CV_RGB(255,255,255), -1);
-        goal = Point(goalVector[0], goalVector[1]);
-        cv::resize(goalMap, goalMap, cv::Size(), resizeScale, resizeScale);
-        cv::resize(analyzedMap, analyzedMap, cv::Size(), resizeScale, resizeScale);
-        cv::resize(analyzedCar, analyzedCar, cv::Size(), resizeScale, resizeScale);
-        Point planeOrigin = Point(int(analyzedMap.cols/2), int(analyzedMap.rows/2));
-        Point scaledPosition = skycam::getPosition(analyzedCar);
-        Point currentPosition = Point(scaledPosition.x - planeOrigin.x, planeOrigin.y - scaledPosition.y);
-        goal = Point(goalVector[0] - planeOrigin.x, planeOrigin.y - goalVector[1]);
-        //ROS_INFO_STREAM("Current Position: " << currentPosition);
-        Mat pathMap = Mat::zeros(analyzedMap.rows, analyzedMap.cols, CV_8UC1);        
-        vector<Point> pathVector;
-        pathVector.push_back(scaledPosition);
-        pathVector.push_back(scaledPosition);             
-        Mat testMap = Mat::zeros(analyzedMap.rows, analyzedMap.cols, CV_8UC1);
-        Mat dilated;
-        Mat element = getStructuringElement( MORPH_ELLIPSE,
-                                       Size( 25*2*scale*resizeScale,25*2*scale*resizeScale));
-        dilate(analyzedMap, dilated, element);
-        rvizRRT = cv_bridge::CvImage(std_msgs::Header(), "mono8", (dilated)).toImageMsg();
-        rvizRRT_.publish(rvizRRT); 
-        
-        Point posInit = currentPosition;
-        float angInit = currentAngle;
-                
-        float minRad = minCurve * scale * resizeScale;
-        float maxDis = floor(minRad * 3.1416);
-        float minDis = ceil(minRad/2);
-        
-        float dis;
-        int cuadrante;
-        
-        float rad, ang;
-        int center;
-        float targetX, targetY, y0;
-        double slope;        
-        double X, Y;
-        double XBest, YBest;
-        
-        bool whileFlag = true;
-        int counter, counter2;
-        float minExpectedCost;
-        vector<tf::Vector3> xyz;
-        vector<tf::Vector3> xyzBest;                  
-        while(whileFlag == true)
-        {       
-                counter = 0;
-                minExpectedCost = sqrt(pow(analyzedMap.cols, 2) + pow(analyzedMap.rows, 2));
-                counter2 = 0;
-                while(counter < beam)
-                {              
-                        xyz.clear();          
-                        dis = rand() % int(minDis) + minDis;
-                        //ROS_INFO_STREAM("Distance: " << dis); 
-                        cuadrante = rand() % 3;   
-                        //ROS_INFO_STREAM("Cuadrante: " << cuadrante);                           
-                        bool flag = true;
-                        Point analyzed;
-                        tf::Vector3 actualCoordinates(currentPosition.x, currentPosition.y, 0); 
-                        //ROS_INFO_STREAM("Cartesian Coordinates: " << actualCoordinates[0] << ", " << actualCoordinates[1] << ", " << actualCoordinates[2]);  
-                        tf::Vector3 refAxis(0,0,1);
-                        tf::Quaternion q0(refAxis, currentAngle);
-                        tf::Matrix3x3 R(q0);          
-                        if(cuadrante > 0)
-                        {
-                                rad = rand() % int(139*scale*resizeScale) + int(minRad); //first number is maximum extra expected radius to wide open the curve
-                                ang = dis/rad;
-                                slope = pow(-1, cuadrante - 1)/tan(ang);
-                                center = pow(-1, cuadrante - 1)*rad;
-                                targetY = rad*sin(ang);
-                                targetX = center - pow(-1, cuadrante - 1)*rad*cos(ang);                        
-                                
-                                //ROS_INFO_STREAM("Center: " << center << " Radius: " << rad); 
-                                //ROS_INFO_STREAM("Target X: " << targetX << " Target Y: " << targetY);                                             
-                                                        
-                                uchar pixel;                                     
-                                for( int index = 0; index <= ceil(abs(center) - rad*cos(ang)); index++ )
-                                {       
-                                        int xValue = index * pow(-1, cuadrante - 1);
-                                        tf::Vector3 carVector(xValue, sqrt(pow(rad,2) - pow(xValue-center,2)), 0); 
+    previous_map_ = map_to_analyze.clone();    
+    path_point_3d.z = 0;   
+    path3D_.publish(path_point_3d);
+    
+    Mat goal_map = Mat::zeros(map_to_analyze.rows, map_to_analyze.cols, CV_8UC1);
+    circle(goal_map, goal, goal_radius*scale, white, -1);     
+    cv::resize(goal_map, goal_map, cv::Size(), resize_grid_scale_, resize_grid_scale_);
+    
+    tf::Vector3 goal_vector(goal.x, goal.y, 0);
+    goal_vector *= resize_grid_scale_;  
+    goal = Point(goal_vector[0], goal_vector[1]);
+    
+    cv::resize(map_to_analyze, map_to_analyze, cv::Size(), resize_grid_scale_, resize_grid_scale_);
+    cv::resize(car_map, car_map, cv::Size(), resize_grid_scale_, resize_grid_scale_);
+    
+    Point resized_map_center = Point(int(map_to_analyze.cols/2), int(map_to_analyze.rows/2));    
+    Point car_position = Skycam::GetPosition(car_map);
+    Point local_car_position = Point(car_position.x - resized_map_center.x, resized_map_center.y - car_position.y);         
+    
+    goal = Point(goal_vector[0] - resized_map_center.x, resized_map_center.y - goal_vector[1]);   
+ 
+    planned_path.push_back(car_position);
+    planned_path.push_back(car_position);   
+          
+    Mat candidate_paths_map = Mat::zeros(map_to_analyze.rows, map_to_analyze.cols, CV_8UC1); 
+    
+    // The occupancy grid gets dilated to afford with the AutoNOMOS dimensions while planning the path
+    Mat element = getStructuringElement( MORPH_ELLIPSE,
+                                   Size( structuring_element_radius*2*scale*resize_grid_scale_,
+                                            structuring_element_radius*2*scale*resize_grid_scale_));
+    Mat dilated;
+    dilate(map_to_analyze, dilated, element);
+    
+    Point initial_position = local_car_position;
+    float initial_angle = current_angle;
+                             
+    while(draw_paths)
+    {       
+        counter = 0;
+        min_expected_cost = sqrt(pow(map_to_analyze.cols, 2) + pow(map_to_analyze.rows, 2));
+        counter2 = 0;
+        while(counter < beam)
+        {              
+            visited_3d_points.clear();          
+            distance_to_move = rand() % int(min_distance_to_move) + min_distance_to_move;
+            quadrant = rand() % 3;                   
+            bool path_is_acceptable = true;
+            Point analyzed_pixel;
+            tf::Vector3 car_coordinates(local_car_position.x, local_car_position.y, 0); 
+            //ROS_INFO_STREAM("Cartesian Coordinates: " << car_coordinates[0] << ", " << car_coordinates[1] << ", " << car_coordinates[2]);  
+            tf::Vector3 z_axis(0,0,1);
+            tf::Quaternion q0(z_axis, current_angle);
+            tf::Matrix3x3 rotation(q0);          
+            if(quadrant > 0)
+            {
+                radius = rand() % int(maximum_radius*scale*resize_grid_scale_) + int(min_radius); //first number is maximum extra expected radius to wide open the curve
+                angle = distance_to_move/radius;
+                slope = pow(-1, quadrant - 1)/tan(angle);
+                center = pow(-1, quadrant - 1)*radius;
+                y_target = radius*sin(angle);
+                x_target = center - pow(-1, quadrant - 1)*radius*cos(angle);                                                                
                                         
-                                        xyz.push_back(R*carVector + actualCoordinates);
-                                        analyzed.x = int(xyz[index][0] + planeOrigin.x);
-                                        analyzed.y = int(planeOrigin.y - xyz[index][1]);
-                                        //ROS_INFO_STREAM("Analyzed X: " << analyzed.x << " Analyzed Y: " << analyzed.y); 
-                                        if(analyzed.y > analyzedMap.rows || analyzed.y < 0 || analyzed.x > analyzedMap.cols || analyzed.x < 0)
-                                        {
-                                                flag = false;
-                                                xyz.clear();
-                                                break;
-                                        }
-                                        pixel = dilated.at<uchar>(analyzed.y, analyzed.x);
-                                        if(int(pixel) == 255)
-                                        {                                                
-                                                flag = false;
-                                                xyz.clear();
-                                                break;
-                                        }
-                                        else
-                                        {
-                                                testMap.at<uchar>(analyzed.y, analyzed.x) = 255;
-                                        }
-                                        pixel = goalMap.at<uchar>(analyzed.y, analyzed.x);
-                                        if(int(pixel) == 255)
-                                        {                                                
-                                                flag = true;
-                                                whileFlag = false;
-                                                break;
-                                        }
-                                                                      
-                                }
-                                
-                                if(flag == true)
-                                {
-                                       y0 = targetY - slope*targetX;   
-                                       tf::Vector3 P1(0, y0, 0);                            
-                                       tf::Vector3 P2(targetX, targetY, 0);                               
-                                       P1 = R*P1;
-                                       P2 = R*P2;
-                                       X = P2[0]-P1[0];
-                                       Y = P2[1]-P1[1];                                
-                                }                                                
-                        }
-                        else
-                        {
-                                slope = 32000; // i.e. significatively great, for an almost vertical slope
-                                uchar pixel;                                     
-                                for( int index = 0; index <= dis; index++ )
-                                {       
-                                        tf::Vector3 carVector(0, index, 0);                                
-                                        xyz.push_back(R*carVector + actualCoordinates);                                
-                                        analyzed.x = int(xyz[index-1][0] + planeOrigin.x);
-                                        analyzed.y = int(planeOrigin.y - xyz[index-1][1]);                                
-                                        if(analyzed.y > analyzedMap.rows || analyzed.y < 0 || analyzed.x > analyzedMap.cols || analyzed.x < 0)
-                                        {
-                                                flag = false;
-                                                xyz.clear();
-                                                break;
-                                        }
-                                        pixel = dilated.at<uchar>(analyzed.y, analyzed.x);
-                                        if(int(pixel) == 255)
-                                        {
-                                                flag = false;
-                                                xyz.clear();
-                                                break;
-                                        }
-                                        else
-                                        {
-                                                testMap.at<uchar>(analyzed.y, analyzed.x) = 255;
-                                        }
-                                        pixel = goalMap.at<uchar>(analyzed.y, analyzed.x);
-                                        if(int(pixel) == 255)
-                                        {
-                                                flag = true;
-                                                whileFlag = false;
-                                                break;
-                                        }                                                                
-                                        
-                                }
-                                
-                                if(flag == true)
-                                {
-                                       tf::Vector3 P1(0, 0, 0);                            
-                                       tf::Vector3 P2(0, dis, 0);                                 
-                                       P1 = R*P1;
-                                       P2 = R*P2;
-                                       X = P2[0]-P1[0];
-                                       Y = P2[1]-P1[1];                              
-                                }   
-                                
-                        }                
-                        if(flag == true)
-                        {
-                                counter++;
-                                Point candidatePosition = Point(int(xyz.back()[0]), int(xyz.back()[1]));
-                                //ROS_INFO_STREAM("Candidate: " << candidatePosition);
-                                //ROS_INFO_STREAM("Goal: " << goal);
-                                float expectedCost = cv::norm(goal-candidatePosition);
-                                bool flag2 = false;     
-                                int width = int(50*scale*resizeScale);                                                           
-                                for(int i2 = 1; i2 <= width; i2++)
-                                {
-                                        for(int i1 = 1; i1 <= 2; i1++)
-                                        {
-                                                uchar pixel;
-                                                float direction, newX, newY; 
-                                                direction = atan2(Y,X);
-                                                newX = xyz.back()[0] + i2*scale*resizeScale*cos(direction + 1.5708*pow(-1, i1)) + planeOrigin.x;
-                                                newY = planeOrigin.y - (xyz.back()[1] + i2*scale*resizeScale*sin(direction + 1.5708*pow(-1, i1)));
-                                                if(newY > dilated.rows || newY < 0 || newX > analyzedMap.cols || newX < 0)
-                                                {
-                                                        pixel = 255;
-                                                }                                                
-                                                else
-                                                {
-                                                        pixel = dilated.at<uchar>(newY, newX);
-                                                }
-                                                if(pixel == 255)
-                                                {
-                                                        expectedCost = expectedCost + expectedCost*(width - i2)/width;
-                                                        flag2 = true;
-                                                        break;
-                                                }
-                                        }
-                                        if(flag2 == true) break;
-                                }      
-                                flag2 = false;                          
-                                for(int i2 = 1; i2 <= width; i2++)
-                                {
-
-                                        uchar pixel;
-                                        float direction, newX, newY; 
-                                        direction = atan2(Y,X);
-                                        newX = xyz.back()[0] + i2*scale*resizeScale*cos(direction) + planeOrigin.x;
-                                        newY = planeOrigin.y - (xyz.back()[1] + i2*scale*resizeScale*sin(direction));
-                                        if(newY > dilated.rows || newY < 0 || newX > analyzedMap.cols || newX < 0)
-                                        {
-                                                pixel = 255;
-                                        }
-                                        else
-                                        {
-                                                pixel = dilated.at<uchar>(newY, newX);
-                                        }
-                                        if(pixel == 255)
-                                        {
-                                                expectedCost = expectedCost + expectedCost*(width - i2)/width;
-                                                flag2 = true;
-                                                break;
-                                        }                                        
-                                        if(flag2 == true) break;
-                                }                                   
-                                if(expectedCost < minExpectedCost)
-                                {
-                                        float direction, newX, newY; 
-                                        direction = atan2(Y,X);
-                                        int width = int(40*scale*resizeScale); 
-                                        newX = xyz.back()[0] + width*cos(direction) + planeOrigin.x;
-                                        newY = planeOrigin.y - (xyz.back()[1] + width*sin(direction));
-                                        uchar pixel;
-                                        if(newY > dilated.rows || newY < 0 || newX > analyzedMap.cols || newX < 0)
-                                        {
-                                                pixel = 255;
-                                        }
-                                        else
-                                        {
-                                                pixel = dilated.at<uchar>(newY, newX);
-                                        }
-                                        if(pixel == 0)
-                                        {
-                                                minExpectedCost = expectedCost;
-                                                xyzBest.clear();
-                                                for(int index = 0; index < xyz.size(); index++)
-                                                {                                                                                                
-                                                        xyzBest.push_back(xyz[index]);                                                                                                    
-                                                }
-                                                XBest = X;
-                                                YBest = Y;
-                                        }
-                                        else
-                                        {
-                                                counter--;
-                                                counter2++;
-                                        }
-                                }                                
-                        }
-                        else
-                        {
-                                counter2++;                                
-                        }                        
-                        if(counter == beam || whileFlag == false)
-                        {                 
-                                counter = beam;                                                               
-                                for(int index = 1; index < xyzBest.size(); index++)
-                                {
-                                        Point newPoint = Point(int(xyzBest[index][0] + planeOrigin.x), int(planeOrigin.y - xyzBest[index][1]));                                        
-                                        pathVector.push_back(newPoint);
-                                        pathMap.at<uchar>(newPoint) = 255;                  
-                                        point3D.x = ((xyzBest[index][0] / resizeScale) / scale) / 100;
-                                        point3D.y = ((xyzBest[index][1] / resizeScale) / scale) / 100;
-                                        point3D.z = 0.2;    
-                                        path3D_.publish(point3D);  
-                                }
-                                xyz.clear();                                
-                                currentAngle = atan2(YBest,XBest) - 1.5708; 
-                                currentPosition = Point(pathVector.back().x - planeOrigin.x, planeOrigin.y - pathVector.back().y);
-                        
-                                //ROS_INFO_STREAM("Final angle: " << currentAngle);
-                                //ROS_INFO_STREAM("Final positon in cartesian plane: " << currentPosition);
-                                rvizRRT = cv_bridge::CvImage(std_msgs::Header(), "mono8", (testMap + dilated + goalMap)).toImageMsg();
-                                rvizRRT_.publish(rvizRRT); 
-                                //ROS_INFO_STREAM("Goal resized: " << goal);
-                                cv::waitKey(1);
-                        }                                                                        
-                        if(counter2 - counter > beam)
-                        {
-                                deadPathCounter++;
-                                ROS_INFO_STREAM("Counter to dead: " << deadPathCounter);
-                                if(deadPathCounter >= 100)
-                                {
-                                        deadPathCounter = 0;
-                                        closeFlag = true;
-                                        counter = beam;
-                                        whileFlag = false;
-                                }
-                                xyzBest.clear();   
-                                pathVector.push_back(scaledPosition);                                                           
-                                pathVector.clear();
-                                pathVector.push_back(scaledPosition);
-                                pathMap = Mat::zeros(analyzedMap.rows, analyzedMap.cols, CV_8UC1);
-                                currentPosition = posInit;
-                                currentAngle = angInit;
-                                counter = beam;
-                                testMap = Mat::zeros(analyzedMap.rows, analyzedMap.cols, CV_8UC1);       
-                                point3D.z = 0;   
-                                path3D_.publish(point3D);                                                 
-                        }
+                uchar pixel;                                     
+                for( int index = 0; index <= ceil(abs(center) - radius*cos(angle)); index++ )
+                {       
+                    int x_value = index * pow(-1, quadrant - 1);
+                    tf::Vector3 new_car_position(x_value, sqrt(pow(radius,2) - pow(x_value-center,2)), 0); 
+                    
+                    visited_3d_points.push_back(rotation*new_car_position + car_coordinates);
+                    analyzed_pixel.x = int(visited_3d_points[index][0] + resized_map_center.x);
+                    analyzed_pixel.y = int(resized_map_center.y - visited_3d_points[index][1]);
+                    if(analyzed_pixel.y > map_to_analyze.rows || analyzed_pixel.y < 0 || analyzed_pixel.x > map_to_analyze.cols || analyzed_pixel.x < 0)
+                    {
+                        path_is_acceptable = false;
+                        visited_3d_points.clear();
+                        break;
+                    }
+                    pixel = dilated.at<uchar>(analyzed_pixel.y, analyzed_pixel.x);
+                    if(int(pixel) == 255)
+                    {                                                
+                        path_is_acceptable = false;
+                        visited_3d_points.clear();
+                        break;
+                    }
+                    else
+                    {
+                        candidate_paths_map.at<uchar>(analyzed_pixel.y, analyzed_pixel.x) = 255;
+                    }
+                    pixel = goal_map.at<uchar>(analyzed_pixel.y, analyzed_pixel.x);
+                    if(int(pixel) == 255)
+                    {                                                
+                        path_is_acceptable = true;
+                        draw_paths = false;
+                        break;
+                    }
+                                                      
                 }
-        }                
+                
+                if(path_is_acceptable)
+                {
+                   y0 = y_target - slope*x_target;   
+                   tf::Vector3 P1(0, y0, 0);                            
+                   tf::Vector3 P2(x_target, y_target, 0);                               
+                   P1 = rotation*P1;
+                   P2 = rotation*P2;
+                   x = P2[0]-P1[0];
+                   y = P2[1]-P1[1];                                
+                }                                                
+            }
+            else
+            {
+                slope = 32000; // i.e. significatively great, for an almost vertical slope
+                uchar pixel;                                     
+                for( int index = 0; index <= distance_to_move; index++ )
+                {       
+                    tf::Vector3 new_car_position(0, index, 0);                                
+                    visited_3d_points.push_back(rotation*new_car_position + car_coordinates);                                
+                    analyzed_pixel.x = int(visited_3d_points[index-1][0] + resized_map_center.x);
+                    analyzed_pixel.y = int(resized_map_center.y - visited_3d_points[index-1][1]);                                
+                    if(analyzed_pixel.y > map_to_analyze.rows || analyzed_pixel.y < 0 || analyzed_pixel.x > map_to_analyze.cols || analyzed_pixel.x < 0)
+                    {
+                        path_is_acceptable = false;
+                        visited_3d_points.clear();
+                        break;
+                    }
+                    pixel = dilated.at<uchar>(analyzed_pixel.y, analyzed_pixel.x);
+                    if(int(pixel) == 255)
+                    {
+                        path_is_acceptable = false;
+                        visited_3d_points.clear();
+                        break;
+                    }
+                    else
+                    {
+                        candidate_paths_map.at<uchar>(analyzed_pixel.y, analyzed_pixel.x) = 255;
+                    }
+                    pixel = goal_map.at<uchar>(analyzed_pixel.y, analyzed_pixel.x);
+                    if(int(pixel) == 255)
+                    {
+                        path_is_acceptable = true;
+                        draw_paths = false;
+                        break;
+                    }                                                                
                         
-        point3D.z = 0.4;
-        path3D_.publish(point3D);
-        return pathVector;
+                }
+                
+                if(path_is_acceptable)
+                {
+                   tf::Vector3 P1(0, 0, 0);                            
+                   tf::Vector3 P2(0, distance_to_move, 0);                                 
+                   P1 = rotation*P1;
+                   P2 = rotation*P2;
+                   x = P2[0]-P1[0];
+                   y = P2[1]-P1[1];                              
+                }   
+                    
+            }                
+            if(path_is_acceptable)
+            {
+                counter++;
+                Point local_goal_candidate = Point(int(visited_3d_points.back()[0]), int(visited_3d_points.back()[1]));
+                //ROS_INFO_STREAM("Candidate: " << local_goal_candidate);
+                //ROS_INFO_STREAM("Goal: " << goal);
+                float expected_cost = cv::norm(goal-local_goal_candidate);
+                bool flag2 = false;     
+                int width = int(horizontal_neighborhood*scale*resize_grid_scale_);                                                           
+                for(int i2 = 1; i2 <= width; i2++)
+                {
+                    for(int i1 = 1; i1 <= 2; i1++)
+                    {
+                        uchar pixel;
+                        float direction, neighbor_x, neighbor_y; 
+                        direction = atan2(y,x);
+                        neighbor_x = visited_3d_points.back()[0] + i2*scale*resize_grid_scale_*cos(direction + M_PI_2*pow(-1, i1)) + resized_map_center.x;
+                        neighbor_y = resized_map_center.y - (visited_3d_points.back()[1] + i2*scale*resize_grid_scale_*sin(direction + M_PI_2*pow(-1, i1)));
+                        if(neighbor_y > dilated.rows || neighbor_y < 0 || neighbor_x > map_to_analyze.cols || neighbor_x < 0)
+                        {
+                            pixel = 255;
+                        }                                                
+                        else
+                        {
+                            pixel = dilated.at<uchar>(neighbor_y, neighbor_x);
+                        }
+                        if(pixel == 255)
+                        {
+                            expected_cost = expected_cost + expected_cost*(width - i2)/width;
+                            flag2 = true;
+                            break;
+                        }
+                    }
+                    if(flag2 == true) break;
+                }      
+                flag2 = false;                          
+                for(int i2 = 1; i2 <= width; i2++)
+                {
+
+                    uchar pixel;
+                    float direction, neighbor_x, neighbor_y; 
+                    direction = atan2(y,x);
+                    neighbor_x = visited_3d_points.back()[0] + i2*scale*resize_grid_scale_*cos(direction) + resized_map_center.x;
+                    neighbor_y = resized_map_center.y - (visited_3d_points.back()[1] + i2*scale*resize_grid_scale_*sin(direction));
+                    if(neighbor_y > dilated.rows || neighbor_y < 0 || neighbor_x > map_to_analyze.cols || neighbor_x < 0)
+                    {
+                        pixel = 255;
+                    }
+                    else
+                    {
+                        pixel = dilated.at<uchar>(neighbor_y, neighbor_x);
+                    }
+                    if(pixel == 255)
+                    {
+                        expected_cost = expected_cost + expected_cost*(width - i2)/width;
+                        flag2 = true;
+                        break;
+                    }                                        
+                    if(flag2 == true) break;
+                }                                   
+                if(expected_cost < min_expected_cost)
+                {
+                    float direction, neighbor_x, neighbor_y; 
+                    direction = atan2(y,x);
+                    int height = int(vertical_neighborhood*scale*resize_grid_scale_); 
+                    neighbor_x = visited_3d_points.back()[0] + height*cos(direction) + resized_map_center.x;
+                    neighbor_y = resized_map_center.y - (visited_3d_points.back()[1] + height*sin(direction));
+                    uchar pixel;
+                    if(neighbor_y > dilated.rows || neighbor_y < 0 || neighbor_x > map_to_analyze.cols || neighbor_x < 0)
+                    {
+                        pixel = 255;
+                    }
+                    else
+                    {
+                        pixel = dilated.at<uchar>(neighbor_y, neighbor_x);
+                    }
+                    if(pixel == 0)
+                    {
+                        min_expected_cost = expected_cost;
+                        best_visited_3d_points.clear();
+                        for(int index = 0; index < visited_3d_points.size(); index++)
+                        {                                                                                                
+                            best_visited_3d_points.push_back(visited_3d_points[index]);                                                                                                    
+                        }
+                        x_best = x;
+                        y_best = y;
+                    }
+                    else
+                    {
+                        counter--;
+                        counter2++;
+                    }
+                }                                
+            }
+            else
+            {
+                    counter2++;                                
+            }                        
+            if(counter == beam || draw_paths == false)
+            {                 
+                counter = beam;                                                               
+                for(int index = 1; index < best_visited_3d_points.size(); index++)
+                {
+                    Point new_point = Point(int(best_visited_3d_points[index][0] + resized_map_center.x), int(resized_map_center.y - best_visited_3d_points[index][1]));                                        
+                    planned_path.push_back(new_point);          
+                    path_point_3d.x = ((best_visited_3d_points[index][0] / resize_grid_scale_) / scale) / centimeters_per_meter;
+                    path_point_3d.y = ((best_visited_3d_points[index][1] / resize_grid_scale_) / scale) / centimeters_per_meter;
+                    path_point_3d.z = 0.2;    
+                    path3D_.publish(path_point_3d);  
+                }
+                visited_3d_points.clear();                                
+                current_angle = atan2(y_best,x_best) - camera_rotation_respect_to_world; 
+                local_car_position = Point(planned_path.back().x - resized_map_center.x, resized_map_center.y - planned_path.back().y);
+        
+                //ROS_INFO_STREAM("Final angle: " << current_angle);
+                //ROS_INFO_STREAM("Final positon in cartesian plane: " << local_car_position);
+                rviz_rrt_ = cv_bridge::CvImage(std_msgs::Header(), "mono8", (candidate_paths_map + dilated + goal_map)).toImageMsg();        
+                rviz_rrt_publisher_.publish(rviz_rrt_); 
+                //ROS_INFO_STREAM("Goal resized: " << goal);
+                cv::waitKey(1);
+            }                                                                        
+            if(counter2 - counter > beam)
+            {
+                death_path_counter++;
+                ROS_INFO_STREAM("Counter to dead: " << death_path_counter);
+                if(death_path_counter >= death_path_limit)
+                {
+                    object_too_close_ = true;
+                    counter = beam;
+                    draw_paths = false;
+                }
+                best_visited_3d_points.clear();   
+                planned_path.push_back(car_position);                                                           
+                planned_path.clear();
+                planned_path.push_back(car_position);
+                local_car_position = initial_position;
+                current_angle = initial_angle;
+                counter = beam;
+                candidate_paths_map = Mat::zeros(map_to_analyze.rows, map_to_analyze.cols, CV_8UC1);       
+                path_point_3d.z = 0;   
+                path3D_.publish(path_point_3d);                                                 
+            }
+        }
+    }                
+                    
+    path_point_3d.z = 0.4;
+    path3D_.publish(path_point_3d);
+    return planned_path;
 }
+
+void Skycam::DrawMapElements()
+{
+    Scalar blue = Scalar(255,0,0), green = Scalar(0,255,0);
+    int radius = 1, thick = 5, thin = 1;
+    
+    // Draw Goal	
+    circle(sky_image_, goal_, radius, blue, thick);
+    // Draw path if it exists
+    if(planned_path_.size() > 1)
+    {
+        for (int point = 0; point < planned_path_.size(); point++)
+        {
+            circle(sky_image_, planned_path_[point], radius, blue, thick);                        
+            circle(path_map_, planned_path_[point], radius, blue, thick);                        
+        }
+    } 
+    if(state_machine_ == 2) circle(path_map_, current_position_, radius, green, thin);  
+    rviz_image_ = cv_bridge::CvImage(std_msgs::Header(), "bgr8", sky_image_).toImageMsg();
+    rviz_image_publisher_.publish(rviz_image_);        
+    rviz_rrt_ = cv_bridge::CvImage(std_msgs::Header(), "bgr8", path_map_).toImageMsg();
+    rviz_rrt_publisher_.publish(rviz_rrt_);   
+}
+
+void Skycam::FinishTrack()
+{
+    // "Turn-off" the PID paramters
+    integral_error_velocity_ = 0;
+    integral_error_line_ = 0;
+    integral_error_orientation_ = 0;
+    
+    ROS_INFO_STREAM("Success!!!!");
+    // An artificial 3D point to notify Rviz about the success
+    geometry_msgs::Point path_point_3d; 
+    path_point_3d.z = 0;
+    path3D_.publish(path_point_3d);
+    // Reset the variables for a new goal
+    goal_.x = -1;
+    goal_.y = -1;
+    goal_selected_ = false;
+    velocity_publisher_.publish(velocity_);                        
+    steering_publisher_.publish(steering_);
+    state_machine_ = 1;
+    goal_selected_ = false;
+    // The commented block is used for numeric evaluation purposes
+    /*filename = "/home/sutadasuto/EK_AutoNOMOS/pathFollowing" + std::to_string(testNum) + ".csv";
+    ofstream myfile;                                
+    myfile.open(filename.c_str());      
+    for(int i=0; i<errorSteeringVector.size(); i++)
+    {
+        myfile << errorSteeringVector[i]/pixels_per_centimeter_;
+        if(i < errorSteeringVector.size()) myfile << ",";
+        else myfile << std::endl;
+    }
+    myfile.close();                                
+    testNum++;*/
+}
+
+void Skycam::GetStates(const gazebo_msgs::ModelStates &msg)
+{
+    for(int model = 0; model < msg.name.size(); model++)
+    {
+        if(msg.name[model] == "unit_cylinder_0")
+        {
+            state_.model_name = msg.name[model];
+            state_.pose = msg.pose[model];
+            state_.twist = msg.twist[model];
+        }
+        if(msg.name[model] == "AutoNOMOS_mini")
+        {
+            float imuX = msg.pose[model].orientation.x;
+            float imuY = msg.pose[model].orientation.y;
+            float imuZ = msg.pose[model].orientation.z;
+            float imuW = msg.pose[model].orientation.w;
+            
+            tf::Quaternion q1(imuX,imuY,imuZ,imuW);
+            tf::Matrix3x3 m(q1);
+            Rt_ = m;
+            
+            double roll, pitch, yaw;
+            m.getRPY(roll, pitch, yaw);
+            current_yaw_ = float(yaw);
+            //ROS_INFO_STREAM("Yaw: " << current_yaw_);
+            status_ok_ = true;                       
+        }
+    }
+}
+
+void Skycam::GoalFromRviz(const geometry_msgs::PoseStamped &goal_rviz)
+{
+    FinishTrack();
+    float centimeters_per_meter = 100;
+    goal_.x = int(goal_rviz.pose.position.x * centimeters_per_meter * pixels_per_centimeter_ + 
+                    sky_image_.cols / 2);
+    goal_.y = int(sky_image_.cols / 2 - 
+                    goal_rviz.pose.position.y * centimeters_per_meter * pixels_per_centimeter_);
+    ROS_INFO_STREAM(goal_);  
+    state_machine_ = 1;
+}
+
+void Skycam::MoveCylinder(const std_msgs::Int8 &key)
+{        
+        if(key.data == 1)
+        {
+                state_.pose.position.y =  state_.pose.position.y + 0.1;
+        }
+        else if(key.data == 2)
+        {
+                state_.pose.position.x =  state_.pose.position.x + 0.1;
+        }
+        else if(key.data == 3)
+        {
+                state_.pose.position.y =  state_.pose.position.y - 0.1;
+        }
+        else if(key.data == 4)
+        {
+                state_.pose.position.x =  state_.pose.position.x - 0.1;
+        }
+        
+        state_publisher_.publish(state_);
+}
+
+void Skycam::onMouseStatic( int event, int x, int y, int flags, void* point )
+{
+        if(event == CV_EVENT_LBUTTONDOWN) 
+        {
+                cv::Point& goal_ = *(cv::Point*) point;
+                goal_.x = x;
+                goal_.y = y;
+                ROS_INFO_STREAM(goal_);        
+        }
+}
+
+void Skycam::ReadLaser(const sensor_msgs::LaserScan &msg)
+{
+    float centimeters_per_meter = 100;
+    float radians_per_degree = M_PI/180.0;
+    object_near_ = false;
+    vector<float> distances;
+    distances = msg.ranges;
+    float angle;
+    float angle_min = msg.angle_min;
+    float orientation = M_PI_2; // first laser begins at 90° from the front of the car
+    float angle_increment = msg.angle_increment;
+    float range_max = msg.range_max/3; 
+    float range_min = 0.10;
+    
+    laser_map_ = Mat::zeros(int(range_max*centimeters_per_meter*pixels_per_centimeter_*2 + 1), 
+        int(range_max*centimeters_per_meter*pixels_per_centimeter_*2 + 1), CV_8UC1);  
+           
+    
+    for (int i = 0; i < distances.size(); i++)
+    {
+        angle = angle_min + orientation + i*angle_increment;
+        
+        if(angle_min + i*angle_increment < laser_fov_ * radians_per_degree || 
+        angle_min + i*angle_increment > 2*M_PI - laser_fov_ * radians_per_degree)
+        {
+            if(distances[i] <= laser_obstacle_range_ && distances[i] >= range_min)
+            {
+                    object_near_ = true;                                
+                    ROS_INFO_STREAM("Obstacle detected at " << distances[i]);
+            }
+        }
+        
+        if(abs(distances[i]) <= range_max && distances[i] >= range_min)
+        {
+            int x = int((range_max + distances[i] * cos(angle)) * centimeters_per_meter * pixels_per_centimeter_);
+            int y = int((range_max - distances[i] * sin(angle)) * centimeters_per_meter * pixels_per_centimeter_);
+            laser_map_.at<uchar>(y,x) = 255;
+        }
+    }
+    rviz_laser_ = cv_bridge::CvImage(std_msgs::Header(), "mono8", laser_map_).toImageMsg();
+    rviz_laser_publisher_.publish(rviz_laser_);         
+}
+
+void Skycam::SkyImage(const sensor_msgs::ImageConstPtr &msg)
+{	
+    //Get image from cam
+    if(goal_.x > 0) goal_selected_ = true;
+	try
+	{
+		cv_ptr_1 = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+	}
+	catch (cv_bridge::Exception& e)
+	{
+		ROS_ERROR("cv_bridge exception: %s", e.what());
+		return;
+	}	
+	sky_image_ = cv_ptr_1->image;     
+    
+    current_position_ = Skycam::GetPosition(GetCarMap(sky_image_));
+    
+    if(goal_selected_ == true && state_machine_ == 1)
+    {       
+        if(status_ok_ == true)
+        {                 
+            Scalar white = Scalar(255,255,255);
+            path_map_ = Mat(sky_image_.rows, sky_image_.cols, CV_8UC3, white);
+            
+            planned_path_ = Skycam::RRT(GetOccupancyGrid(sky_image_), GetCarMap(sky_image_), goal_, beam_, pixels_per_centimeter_, current_yaw_); 
+            if(planned_path_.size() > 1)
+            {      
+                // The RRT implementation reduces the map's resolution to do pixel-wise grids
+                // The following loop increases the calculated path's resolution to match the original map
+                for (int point = 0; point < planned_path_.size(); point++)
+                {
+                    planned_path_[point].x = planned_path_[point].x/resize_grid_scale_;
+                    planned_path_[point].y = planned_path_[point].y/resize_grid_scale_;                                                                                       
+                }
+                local_begin_index_ = 0; 
+                local_goal_index_ = index_skip_; 
+                // Be sure the goal index is not beyond the size of the planned path
+                if(local_begin_index_ < planned_path_.size() - 1 && local_goal_index_ >= planned_path_.size() )
+                {
+                    local_goal_index_ = planned_path_.size() - 1;
+                }                    
+                first_move_ = true;
+                object_too_close_ = false;                             
+                state_machine_ = 2;                 
+            }
+        }                    
+    }            
+    
+    if(object_near_) 
+    {                
+        if(NewObjectInPath())
+        {
+            velocity_.data = -5;
+            steering_.data = 0;
+            velocity_publisher_.publish(velocity_);                        
+            steering_publisher_.publish(steering_);
+            sleep(1);
+            velocity_.data = 0;
+            velocity_publisher_.publish(velocity_); 
+        }
+    }
+    if(object_too_close_)
+    {
+        velocity_.data = -5;
+        steering_.data = 0;
+        velocity_publisher_.publish(velocity_);                        
+        steering_publisher_.publish(steering_);
+        sleep(1);
+        velocity_.data = 0;
+        velocity_publisher_.publish(velocity_); 
+    }
+    
+    if(state_machine_ == 2)
+    {   
+        // Take control actions to follow the planned path
+        float *signals = GetControlActions(planned_path_, current_position_, local_begin_index_, local_goal_index_);        
+        velocity_.data = signals[0];
+        steering_.data = signals[1];
+        velocity_publisher_.publish(velocity_);                        
+        steering_publisher_.publish(steering_);
+    }
+           
+    DrawMapElements();                                                
+} 

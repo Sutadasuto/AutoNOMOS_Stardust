@@ -3,7 +3,7 @@
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "skycam");
-  skycam OBJECT;
+  Skycam OBJECT;
   
   ros::spin();
   return 0;

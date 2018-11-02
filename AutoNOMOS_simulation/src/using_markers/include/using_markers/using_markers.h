@@ -10,37 +10,37 @@
 
 using namespace std;
 
-class using_markers
+class UsingMarkers
 {
 
 //private:
 public:
 
-	ros::NodeHandle n;
-	ros::Publisher marker_pub;
+	ros::NodeHandle n_;
+	ros::Publisher marker_pub_;
 	ros::Subscriber key_;
 	ros::Subscriber points_;
 	ros::Subscriber state_;
 
-	visualization_msgs::Marker unit_box_0;    
-	visualization_msgs::Marker unit_cylinder_0;
-	visualization_msgs::Marker unit_cylinder_1;    
-	visualization_msgs::Marker unit_box_1;
-	visualization_msgs::Marker unit_box_2;
-	visualization_msgs::Marker unit_box_3;
+	visualization_msgs::Marker unit_box_0_;    
+	visualization_msgs::Marker unit_cylinder_0_;
+	visualization_msgs::Marker unit_cylinder_1_;    
+	visualization_msgs::Marker unit_box_1_;
+	visualization_msgs::Marker unit_box_2_;
+	visualization_msgs::Marker unit_box_3_;
 
-	visualization_msgs::Marker points, line_strip;
-	geometry_msgs::Point p;
+	visualization_msgs::Marker marker_points_, line_strip_;
+	geometry_msgs::Point p_;
 
-	gazebo_msgs::ModelState state;
+	gazebo_msgs::ModelState model_state_;
 	
 public:
-	using_markers();
-	~using_markers();
+	UsingMarkers();
+	~UsingMarkers();
 	
-	void newPoint(const geometry_msgs::Point &point);
-	void moveCylinder(const std_msgs::Int8 &key);
-	void getState(const gazebo_msgs::ModelStates &msg);
+	void NewPoint(const geometry_msgs::Point &point);
+	void MoveCylinder(const std_msgs::Int8 &key);
+	void GetState(const gazebo_msgs::ModelStates &msg);
 
 private:
 };

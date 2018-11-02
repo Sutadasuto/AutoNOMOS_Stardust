@@ -3,7 +3,7 @@
 int main( int argc, char** argv )
 {
   ros::init(argc, argv, "using_markers");
-  using_markers OBJECT;
+  UsingMarkers OBJECT;
   
   ros::spin();
   return 0;

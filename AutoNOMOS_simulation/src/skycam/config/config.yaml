@@ -1,24 +1,21 @@
-flag1: false
-flag: 1
-scale: 0.640 #pixels per centimeter
-resizeScale: 0.375 #scale for meshing
-minCurve: 80 #closest turn radius possible for the car (i.e. at maximum steerling angle); given in centimeters
-beam: 1000
-angle: 0
-velRange: 10
-steerRange: 70
-errorTolerance: 10 
-skip: 4
-Pv: 0.05
-Iv: 0.005
-Dv: 1
-Ps: 11
-Is: 0.0005
-Ds: 2
-Ps2: 100
-Is2: 0.005
-Ds2: 20
-alpha: 0.2
-laserFOV: 25
-laserRange: 0.60
-obstacleThreshold: 50
+pixels_per_centimeter_: 0.640
+resize_grid_scale_: 0.375 #scale for meshing
+min_curve_radius_: 80 #closest turn radius possible for the car (i.e. at maximum steerling angle); given in centimeters
+beam_: 1000
+vel_range_: 10
+steer_range_: 70
+max_error_tolerance_: 10 
+index_skip_: 4 #the greater the skip, the smoother will be the followed path; however, it will be less likely to represent the calculated path
+P_velocity_: 0.05
+I_velocity_: 0.005
+D_velocity_: 1
+P_line_: 11
+I_line_: 0.0005
+D_line_: 2
+P_orientation_: 100
+I_orientation_: 0.005
+D_orientation_: 20
+alpha_: 0.2
+laser_fov_: 25 #in degrees, from center to any edge
+laser_obstacle_range_: 0.60 #in meters
+obstacle_threshold_: 50
