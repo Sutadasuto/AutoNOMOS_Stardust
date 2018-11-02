@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Session Name="/home/sutadasuto/AutoNOMOS_Stardust/AutoNOMOS_Stardust.workspace">
+  <int Value="0" Name="m_selectedTab"/>
+  <wxString Value="/home/sutadasuto/AutoNOMOS_Stardust/AutoNOMOS_Stardust.workspace" Name="m_workspaceName"/>
+  <TabInfoArray Name="TabInfoArray">
+    <TabInfo>
+      <wxString Value="/home/sutadasuto/AutoNOMOS_Stardust/AutoNOMOS_simulation/src/skycam/src/skycam_nodelet.cpp" Name="FileName"/>
+      <int Value="521" Name="FirstVisibleLine"/>
+      <int Value="895" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds">
+        <IntVectorItem Value="67"/>
+        <IntVectorItem Value="111"/>
+        <IntVectorItem Value="239"/>
+        <IntVectorItem Value="257"/>
+        <IntVectorItem Value="271"/>
+        <IntVectorItem Value="303"/>
+        <IntVectorItem Value="660"/>
+        <IntVectorItem Value="683"/>
+        <IntVectorItem Value="759"/>
+        <IntVectorItem Value="781"/>
+        <IntVectorItem Value="792"/>
+      </IntVector>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="/home/sutadasuto/AutoNOMOS_Stardust/AutoNOMOS_simulation/src/skycam/include/skycam/skycam.h" Name="FileName"/>
+      <int Value="123" Name="FirstVisibleLine"/>
+      <int Value="135" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="/home/sutadasuto/AutoNOMOS_Stardust/AutoNOMOS_simulation/src/skycam/src/skycam_node.cpp" Name="FileName"/>
+      <int Value="0" Name="FirstVisibleLine"/>
+      <int Value="2" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="/home/sutadasuto/AutoNOMOS_Stardust/AutoNOMOS_simulation/src/using_markers/src/using_markers_nodelet.cpp" Name="FileName"/>
+      <int Value="275" Name="FirstVisibleLine"/>
+      <int Value="283" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="/home/sutadasuto/AutoNOMOS_Stardust/AutoNOMOS_simulation/src/using_markers/include/using_markers/using_markers.h" Name="FileName"/>
+      <int Value="27" Name="FirstVisibleLine"/>
+      <int Value="0" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+  </TabInfoArray>
+  <SerializedObject Name="m_breakpoints">
+    <long Value="0" Name="Count"/>
+  </SerializedObject>
+</Session>

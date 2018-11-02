@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeLite_Project Name="AutoNOMOS_Stardust" Version="10.0.0" InternalType="">
+  <VirtualDirectory Name="Gazebo_plugin">
+    <File Name="Gazebo_plugin/autonomos_plugin.cc"/>
+    <VirtualDirectory Name="build">
+      <VirtualDirectory Name="CMakeFiles">
+        <File Name="Gazebo_plugin/build/CMakeFiles/feature_tests.cxx"/>
+        <File Name="Gazebo_plugin/build/CMakeFiles/feature_tests.c"/>
+        <VirtualDirectory Name="3.5.1">
+          <VirtualDirectory Name="CompilerIdC">
+            <File Name="Gazebo_plugin/build/CMakeFiles/3.5.1/CompilerIdC/CMakeCCompilerId.c"/>
+          </VirtualDirectory>
+          <VirtualDirectory Name="CompilerIdCXX">
+            <File Name="Gazebo_plugin/build/CMakeFiles/3.5.1/CompilerIdCXX/CMakeCXXCompilerId.cpp"/>
+          </VirtualDirectory>
+        </VirtualDirectory>
+      </VirtualDirectory>
+    </VirtualDirectory>
+  </VirtualDirectory>
+  <VirtualDirectory Name="AutoNOMOS_simulation">
+    <VirtualDirectory Name="build">
+      <VirtualDirectory Name="CMakeFiles">
+        <File Name="AutoNOMOS_simulation/build/CMakeFiles/feature_tests.cxx"/>
+        <File Name="AutoNOMOS_simulation/build/CMakeFiles/feature_tests.c"/>
+        <VirtualDirectory Name="3.5.1">
+          <VirtualDirectory Name="CompilerIdC">
+            <File Name="AutoNOMOS_simulation/build/CMakeFiles/3.5.1/CompilerIdC/CMakeCCompilerId.c"/>
+          </VirtualDirectory>
+          <VirtualDirectory Name="CompilerIdCXX">
+            <File Name="AutoNOMOS_simulation/build/CMakeFiles/3.5.1/CompilerIdCXX/CMakeCXXCompilerId.cpp"/>
+          </VirtualDirectory>
+        </VirtualDirectory>
+      </VirtualDirectory>
+    </VirtualDirectory>
+    <VirtualDirectory Name="src">
+      <VirtualDirectory Name="autonomos_gazebo">
+        <File Name="AutoNOMOS_simulation/src/autonomos_gazebo/ackermann_plugin.cpp"/>
+        <File Name="AutoNOMOS_simulation/src/autonomos_gazebo/ackermann_plugin.h"/>
+        <VirtualDirectory Name="plugins">
+          <File Name="AutoNOMOS_simulation/src/autonomos_gazebo/plugins/velocity_plugin.cc"/>
+        </VirtualDirectory>
+      </VirtualDirectory>
+      <VirtualDirectory Name="carFiles">
+        <VirtualDirectory Name="carlike_local_planner">
+          <VirtualDirectory Name="include">
+            <VirtualDirectory Name="base_local_planner">
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/world_model.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/trajectory_planner.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/map_cell.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/map_grid_visualizer.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/trajectory_inc.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/map_grid_cost_point.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/voxel_grid_model.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/trajectory_planner_ros.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/planar_laser_scan.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/map_grid.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/goal_functions.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/trajectory.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/costmap_model.h"/>
+              <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/include/base_local_planner/point_grid.h"/>
+            </VirtualDirectory>
+          </VirtualDirectory>
+          <VirtualDirectory Name="src">
+            <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/src/trajectory.cpp"/>
+            <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/src/map_grid.cpp"/>
+            <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/src/trajectory_planner.cpp"/>
+            <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/src/costmap_model.cpp"/>
+            <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/src/goal_functions.cpp"/>
+            <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/src/voxel_grid_model.cpp"/>
+            <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/src/map_cell.cpp"/>
+            <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/src/point_grid.cpp"/>
+            <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/src/map_grid_visualizer.cpp"/>
+            <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/src/trajectory_planner_ros.cpp"/>
+          </VirtualDirectory>
+          <VirtualDirectory Name="test">
+            <File Name="AutoNOMOS_simulation/src/carFiles/carlike_local_planner/test/utest.cpp"/>
+          </VirtualDirectory>
+        </VirtualDirectory>
+      </VirtualDirectory>
+      <VirtualDirectory Name="teclado">
+        <VirtualDirectory Name="include">
+          <VirtualDirectory Name="teclado">
+            <File Name="AutoNOMOS_simulation/src/teclado/include/teclado/teclado.h"/>
+          </VirtualDirectory>
+        </VirtualDirectory>
+        <VirtualDirectory Name="src">
+          <File Name="AutoNOMOS_simulation/src/teclado/src/teclado.cpp"/>
+          <File Name="AutoNOMOS_simulation/src/teclado/src/main.cpp"/>
+        </VirtualDirectory>
+      </VirtualDirectory>
+      <VirtualDirectory Name="skycam">
+        <VirtualDirectory Name="include">
+          <VirtualDirectory Name="skycam">
+            <File Name="AutoNOMOS_simulation/src/skycam/include/skycam/skycam.h"/>
+          </VirtualDirectory>
+        </VirtualDirectory>
+        <VirtualDirectory Name="src">
+          <File Name="AutoNOMOS_simulation/src/skycam/src/skycam_node.cpp"/>
+          <File Name="AutoNOMOS_simulation/src/skycam/src/skycam_nodelet.cpp"/>
+        </VirtualDirectory>
+      </VirtualDirectory>
+      <VirtualDirectory Name="using_markers">
+        <VirtualDirectory Name="include">
+          <VirtualDirectory Name="using_markers">
+            <File Name="AutoNOMOS_simulation/src/using_markers/include/using_markers/using_markers.h"/>
+          </VirtualDirectory>
+        </VirtualDirectory>
+        <VirtualDirectory Name="src">
+          <File Name="AutoNOMOS_simulation/src/using_markers/src/using_markers_nodelet.cpp"/>
+          <File Name="AutoNOMOS_simulation/src/using_markers/src/using_markers_node.cpp"/>
+        </VirtualDirectory>
+      </VirtualDirectory>
+      <VirtualDirectory Name="autonomos_simulation">
+        <File Name="AutoNOMOS_simulation/src/autonomos_simulation/autoNOMOS_gazebo_bridge.cpp"/>
+        <File Name="AutoNOMOS_simulation/src/autonomos_simulation/perception_node.cpp"/>
+        <File Name="AutoNOMOS_simulation/src/autonomos_simulation/tf2_broadcaster_node.cpp"/>
+        <File Name="AutoNOMOS_simulation/src/autonomos_simulation/robot_pose_publisher.cpp"/>
+        <File Name="AutoNOMOS_simulation/src/autonomos_simulation/vision_node.cpp"/>
+        <File Name="AutoNOMOS_simulation/src/autonomos_simulation/torque_ctrl.cpp"/>
+      </VirtualDirectory>
+      <VirtualDirectory Name="tecladoCilindro">
+        <VirtualDirectory Name="include">
+          <VirtualDirectory Name="teclado">
+            <File Name="AutoNOMOS_simulation/src/tecladoCilindro/include/teclado/teclado.h"/>
+          </VirtualDirectory>
+        </VirtualDirectory>
+        <VirtualDirectory Name="src">
+          <File Name="AutoNOMOS_simulation/src/tecladoCilindro/src/teclado.cpp"/>
+          <File Name="AutoNOMOS_simulation/src/tecladoCilindro/src/main.cpp"/>
+        </VirtualDirectory>
+      </VirtualDirectory>
+    </VirtualDirectory>
+  </VirtualDirectory>
+  <Description/>
+  <Dependencies/>
+  <Settings Type="Executable">
+    <GlobalSettings>
+      <Compiler Options="" C_Options="" Assembler="">
+        <IncludePath Value="."/>
+      </Compiler>
+      <Linker Options="">
+        <LibraryPath Value="."/>
+      </Linker>
+      <ResourceCompiler Options=""/>
+    </GlobalSettings>
+    <Configuration Name="Debug" CompilerType="Cross GCC ( x86_64-linux-gnu )" DebuggerType="GNU gdb debugger" Type="Executable" BuildCmpWithGlobalSettings="append" BuildLnkWithGlobalSettings="append" BuildResWithGlobalSettings="append">
+      <Compiler Options="-g -Wall" C_Options="" Assembler="" Required="yes" PreCompiledHeader="" PCHInCommandLine="no" PCHFlags="" PCHFlagsPolicy="0">
+        <IncludePath Value="."/>
+      </Compiler>
+      <Linker Options="-O0" Required="yes">
+        <LibraryPath Value="."/>
+        <LibraryPath Value="Debug"/>
+      </Linker>
+      <ResourceCompiler Options="" Required="no"/>
+      <General OutputFile="$(IntermediateDirectory)/$(ProjectName)" IntermediateDirectory="./Debug" Command="./$(ProjectName)" CommandArguments="" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="./Debug" PauseExecWhenProcTerminates="no" IsGUIProgram="no" IsEnabled="yes"/>
+      <BuildSystem Name="Default"/>
+      <Environment EnvVarSetName="&lt;Use Workspace Settings&gt;" DbgSetName="&lt;Use Global Settings&gt;">
+        <![CDATA[]]>
+      </Environment>
+      <Debugger IsRemote="no" RemoteHostName="" RemoteHostPort="" DebuggerPath="" IsExtended="no">
+        <DebuggerSearchPaths/>
+        <PostConnectCommands/>
+        <StartupCommands/>
+      </Debugger>
+      <PreBuild/>
+      <PostBuild/>
+      <CustomBuild Enabled="no">
+        <RebuildCommand/>
+        <CleanCommand/>
+        <BuildCommand/>
+        <PreprocessFileCommand/>
+        <SingleFileCommand/>
+        <MakefileGenerationCommand/>
+        <ThirdPartyToolName/>
+        <WorkingDirectory/>
+      </CustomBuild>
+      <AdditionalRules>
+        <CustomPostBuild/>
+        <CustomPreBuild/>
+      </AdditionalRules>
+      <Completion EnableCpp11="no" EnableCpp14="no">
+        <ClangCmpFlagsC/>
+        <ClangCmpFlags/>
+        <ClangPP/>
+        <SearchPaths/>
+      </Completion>
+    </Configuration>
+  </Settings>
+</CodeLite_Project>
